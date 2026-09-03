@@ -6,7 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig(() => {
   return {
-    base: '/',
+    base: './',
     plugins: [
       react(),
       tailwindcss(),
@@ -21,10 +21,9 @@ export default defineConfig(() => {
           'pwa-512x512.png',
           'pwa-maskable-512x512.png',
           'img/*.svg',
-          'sw.js',
         ],
         manifest: {
-          id: '/',
+          id: './',
           name: 'Inventário Patrimonial UTFPR-AP',
           short_name: 'Inventário',
           description: 'Aplicativo oficial para conferência e validação do inventário de bens patrimoniais da UTFPR Campus Apucarana.',
@@ -35,31 +34,31 @@ export default defineConfig(() => {
           display: 'standalone',
           display_override: ['standalone', 'window-controls-overlay'],
           orientation: 'portrait-primary',
-          start_url: '/',
-          scope: '/',
+          start_url: './',
+          scope: './',
           categories: ['productivity', 'utilities', 'business'],
           prefer_related_applications: false,
           icons: [
             {
-              src: '/pwa-192x192.png',
+              src: 'pwa-192x192.png',
               sizes: '192x192',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/pwa-512x512.png',
+              src: 'pwa-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/pwa-maskable-512x512.png',
+              src: 'pwa-maskable-512x512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
             },
             {
-              src: '/apple-touch-icon.png',
+              src: 'apple-touch-icon.png',
               sizes: '180x180',
               type: 'image/png',
               purpose: 'any',
