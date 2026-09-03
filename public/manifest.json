@@ -3,6 +3,24 @@
   "short_name": "Inventário",
   "name": "Inventário Patrimonial UTFPR-AP",
   "description": "Aplicativo oficial para conferência e validação do inventário de bens patrimoniais da UTFPR Campus Apucarana.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "window-controls-overlay"
+  ],
+  "orientation": "portrait-primary",
+  "background_color": "#09090b",
+  "theme_color": "#f59e0b",
+  "categories": [
+    "productivity",
+    "utilities",
+    "business"
+  ],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/pwa-192x192.png",
@@ -21,16 +39,13 @@
       "type": "image/png",
       "sizes": "512x512",
       "purpose": "maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "180x180",
+      "purpose": "any"
     }
-  ],
-  "start_url": "/",
-  "scope": "/",
-  "background_color": "#09090b",
-  "theme_color": "#f59e0b",
-  "display": "standalone",
-  "orientation": "portrait-primary",
-  "lang": "pt-BR",
-  "dir": "ltr",
-  "categories": ["utilities", "productivity", "business"],
-  "prefer_related_applications": false
+  ]
 }
+

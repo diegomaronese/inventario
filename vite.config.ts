@@ -1,42 +1,18 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import fs from 'fs';
-import {defineConfig, Plugin} from 'vite';
+import {defineConfig} from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
-
-function servePwaStaticAssetsPlugin(): Plugin {
-  return {
-    name: 'serve-pwa-static-assets',
-    configureServer(server) {
-      server.middlewares.use((req, res, next) => {
-        const cleanUrl = req.url ? req.url.split('?')[0] : '';
-        if (cleanUrl === '/sw.js') {
-          const swFile = path.resolve(__dirname, 'public/sw.js');
-          if (fs.existsSync(swFile)) {
-            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-            res.setHeader('Service-Worker-Allowed', '/');
-            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-            res.end(fs.readFileSync(swFile, 'utf-8'));
-            return;
-          }
-        }
-        next();
-      });
-    },
-  };
-}
 
 export default defineConfig(() => {
   return {
     base: '/',
     plugins: [
-      servePwaStaticAssetsPlugin(),
       react(),
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        manifestFilename: 'manifest.json',
+        injectRegister: 'auto',
         includeAssets: [
           'favicon.png',
           'apple-touch-icon.png',
@@ -45,18 +21,24 @@ export default defineConfig(() => {
           'pwa-512x512.png',
           'pwa-maskable-512x512.png',
           'img/*.svg',
+          'sw.js',
         ],
         manifest: {
           id: '/',
           name: 'Inventário Patrimonial UTFPR-AP',
           short_name: 'Inventário',
           description: 'Aplicativo oficial para conferência e validação do inventário de bens patrimoniais da UTFPR Campus Apucarana.',
+          lang: 'pt-BR',
+          dir: 'ltr',
           theme_color: '#f59e0b',
           background_color: '#09090b',
           display: 'standalone',
+          display_override: ['standalone', 'window-controls-overlay'],
           orientation: 'portrait-primary',
           start_url: '/',
           scope: '/',
+          categories: ['productivity', 'utilities', 'business'],
+          prefer_related_applications: false,
           icons: [
             {
               src: '/pwa-192x192.png',
@@ -75,6 +57,12 @@ export default defineConfig(() => {
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
+            },
+            {
+              src: '/apple-touch-icon.png',
+              sizes: '180x180',
+              type: 'image/png',
+              purpose: 'any',
             },
           ],
         },

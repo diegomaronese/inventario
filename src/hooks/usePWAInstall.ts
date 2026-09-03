@@ -5,84 +5,77 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
+declare global {
+  interface Window {
+    __deferredPrompt?: BeforeInstallPromptEvent | null;
+  }
+}
+
 export function usePWAInstall() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(() => {
-    if (typeof window !== 'undefined' && (window as unknown as { __pwaInstallPrompt?: BeforeInstallPromptEvent }).__pwaInstallPrompt) {
-      return (window as unknown as { __pwaInstallPrompt: BeforeInstallPromptEvent }).__pwaInstallPrompt;
-    }
-    return null;
-  });
-  const [isInstalled, setIsInstalled] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    const isStandaloneMedia = window.matchMedia('(display-mode: standalone)').matches;
-    const isNavigatorStandalone = (window.navigator as unknown as { standalone?: boolean }).standalone === true;
-    const isGlobalInstalled = (window as unknown as { __pwaInstalled?: boolean }).__pwaInstalled === true;
-    return isStandaloneMedia || isNavigatorStandalone || isGlobalInstalled;
-  });
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(
+    typeof window !== 'undefined' ? window.__deferredPrompt || null : null
+  );
+  const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isInAppBrowser, setIsInAppBrowser] = useState(false);
 
   useEffect(() => {
-    // Detect standalone mode (already installed as PWA or running in web app window)
+    // Detect standalone mode (already installed as PWA or running in web app window / WebAPK)
     const checkStandalone = () => {
       const isStandaloneMedia = window.matchMedia('(display-mode: standalone)').matches;
       const isNavigatorStandalone = (window.navigator as unknown as { standalone?: boolean }).standalone === true;
-      const isGlobalInstalled = (window as unknown as { __pwaInstalled?: boolean }).__pwaInstalled === true;
-      return isStandaloneMedia || isNavigatorStandalone || isGlobalInstalled;
+      const isAndroidWebAPK = document.referrer.includes('android-app://');
+      return isStandaloneMedia || isNavigatorStandalone || isAndroidWebAPK;
     };
 
     setIsInstalled(checkStandalone());
 
-    // Detect user agent specifics
+    // Detect iOS devices
     const userAgent = window.navigator.userAgent.toLowerCase();
     const isIOSDevice = /iphone|ipad|ipod/.test(userAgent) && !(window as unknown as { MSStream?: unknown }).MSStream;
     setIsIOS(isIOSDevice);
 
-    // Detect In-App Browsers (WhatsApp, Gmail, Facebook, Instagram, LinkedIn, etc.)
-    const isEmbedded = /wv|fbav|instagram|fban|line|micromessenger|gsa/i.test(userAgent);
-    setIsInAppBrowser(isEmbedded);
+    // Detect In-App WebViews (WhatsApp, Instagram, Facebook, Messenger, etc.)
+    const inApp = /fban|fbav|instagram|messenger|whatsapp|bytedance|tiktok|snapchat|line/i.test(userAgent);
+    setIsInAppBrowser(inApp);
 
-    // Check if prompt was already captured on window
-    const existingPrompt = (window as unknown as { __pwaInstallPrompt?: BeforeInstallPromptEvent }).__pwaInstallPrompt;
-    if (existingPrompt && !deferredPrompt) {
-      setDeferredPrompt(existingPrompt);
+    // Check if prompt was caught before component mount
+    if (window.__deferredPrompt) {
+      setDeferredPrompt(window.__deferredPrompt);
     }
+
+    const handlePromptReady = () => {
+      if (window.__deferredPrompt) {
+        setDeferredPrompt(window.__deferredPrompt);
+      }
+    };
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      (window as unknown as { __pwaInstallPrompt?: BeforeInstallPromptEvent }).__pwaInstallPrompt = e as BeforeInstallPromptEvent;
-      setDeferredPrompt(e as BeforeInstallPromptEvent);
+      const promptEvent = e as BeforeInstallPromptEvent;
+      window.__deferredPrompt = promptEvent;
+      setDeferredPrompt(promptEvent);
     };
 
     const handleAppInstalled = () => {
       setIsInstalled(true);
       setDeferredPrompt(null);
-      (window as unknown as { __pwaInstallPrompt?: unknown }).__pwaInstallPrompt = null;
-      (window as unknown as { __pwaInstalled?: boolean }).__pwaInstalled = true;
+      window.__deferredPrompt = null;
     };
 
-    const handlePromptReady = () => {
-      const prompt = (window as unknown as { __pwaInstallPrompt?: BeforeInstallPromptEvent }).__pwaInstallPrompt;
-      if (prompt) {
-        setDeferredPrompt(prompt);
-      }
-    };
-
+    window.addEventListener('pwa-prompt-ready', handlePromptReady);
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     window.addEventListener('appinstalled', handleAppInstalled);
-    window.addEventListener('pwa-prompt-ready', handlePromptReady);
-    window.addEventListener('pwa-installed-success', handleAppInstalled);
 
     return () => {
+      window.removeEventListener('pwa-prompt-ready', handlePromptReady);
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
-      window.removeEventListener('pwa-prompt-ready', handlePromptReady);
-      window.removeEventListener('pwa-installed-success', handleAppInstalled);
     };
-  }, [deferredPrompt]);
+  }, []);
 
   const install = async (): Promise<boolean> => {
-    const promptEvent = deferredPrompt || (typeof window !== 'undefined' ? (window as unknown as { __pwaInstallPrompt?: BeforeInstallPromptEvent }).__pwaInstallPrompt : null);
+    const promptEvent = deferredPrompt || (typeof window !== 'undefined' ? window.__deferredPrompt : null);
     if (!promptEvent) return false;
     try {
       await promptEvent.prompt();
@@ -91,7 +84,7 @@ export function usePWAInstall() {
         setIsInstalled(true);
         setDeferredPrompt(null);
         if (typeof window !== 'undefined') {
-          (window as unknown as { __pwaInstallPrompt?: unknown }).__pwaInstallPrompt = null;
+          window.__deferredPrompt = null;
         }
         return true;
       }
@@ -102,10 +95,11 @@ export function usePWAInstall() {
   };
 
   return {
-    isInstallable: !!deferredPrompt || (typeof window !== 'undefined' && !!(window as unknown as { __pwaInstallPrompt?: BeforeInstallPromptEvent }).__pwaInstallPrompt),
+    isInstallable: !!deferredPrompt || (typeof window !== 'undefined' && !!window.__deferredPrompt),
     isInstalled,
     isIOS,
     isInAppBrowser,
     install,
   };
 }
+

@@ -13,41 +13,24 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Inventário" />
+    <meta name="application-name" content="Inventário" />
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="alternate icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.json" />
+    <script>
+      // Capture beforeinstallprompt globally to prevent race conditions before React hydration
+      window.__deferredPrompt = null;
+      window.addEventListener('beforeinstallprompt', function(e) {
+        e.preventDefault();
+        window.__deferredPrompt = e;
+        window.dispatchEvent(new CustomEvent('pwa-prompt-ready'));
+      });
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&family=Roboto+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script>
-      // Capture early beforeinstallprompt event before React mounts
-      window.__pwaInstallPrompt = null;
-      window.__pwaInstalled = false;
-      window.addEventListener('beforeinstallprompt', function(event) {
-        event.preventDefault();
-        window.__pwaInstallPrompt = event;
-        window.dispatchEvent(new CustomEvent('pwa-prompt-ready'));
-      });
-      window.addEventListener('appinstalled', function() {
-        window.__pwaInstallPrompt = null;
-        window.__pwaInstalled = true;
-        window.dispatchEvent(new CustomEvent('pwa-installed-success'));
-      });
-      // Register Service Worker early
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js', { scope: '/' })
-            .then(function(reg) {
-              console.log('[PWA] Service Worker ativo com escopo:', reg.scope);
-            })
-            .catch(function(err) {
-              console.warn('[PWA] Erro ao registrar Service Worker:', err);
-            });
-        });
-      }
-    </script>
   </head>
   <body class="bg-zinc-50 dark:bg-zinc-950 text-zinc-800 dark:text-zinc-100 antialiased selection:bg-amber-400 selection:text-black">
     <div id="root"></div>
