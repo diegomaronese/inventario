@@ -1,17 +1,42 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import {defineConfig} from 'vite';
+import fs from 'fs';
+import {defineConfig, Plugin} from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+
+function servePwaStaticAssetsPlugin(): Plugin {
+  return {
+    name: 'serve-pwa-static-assets',
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const cleanUrl = req.url ? req.url.split('?')[0] : '';
+        if (cleanUrl === '/sw.js') {
+          const swFile = path.resolve(__dirname, 'public/sw.js');
+          if (fs.existsSync(swFile)) {
+            res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+            res.setHeader('Service-Worker-Allowed', '/');
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+            res.end(fs.readFileSync(swFile, 'utf-8'));
+            return;
+          }
+        }
+        next();
+      });
+    },
+  };
+}
 
 export default defineConfig(() => {
   return {
-    base: './',
+    base: '/',
     plugins: [
+      servePwaStaticAssetsPlugin(),
       react(),
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        manifestFilename: 'manifest.json',
         includeAssets: [
           'favicon.png',
           'apple-touch-icon.png',

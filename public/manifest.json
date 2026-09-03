@@ -28,5 +28,9 @@
   "background_color": "#09090b",
   "theme_color": "#f59e0b",
   "display": "standalone",
-  "orientation": "portrait-primary"
+  "orientation": "portrait-primary",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "categories": ["utilities", "productivity", "business"],
+  "prefer_related_applications": false
 }

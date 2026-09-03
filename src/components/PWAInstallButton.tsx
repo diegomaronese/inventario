@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
-import { Download, Smartphone, Share, PlusSquare, X, CheckCircle2 } from 'lucide-react';
+import { Download, Smartphone, Share, PlusSquare, X, CheckCircle2, AlertCircle, ExternalLink, Sparkles } from 'lucide-react';
 
 interface PWAInstallButtonProps {
   variant?: 'compact' | 'banner' | 'header' | 'menu';
@@ -11,7 +11,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
   variant = 'compact',
   className = '',
 }) => {
-  const { isInstallable, isInstalled, isIOS, install } = usePWAInstall();
+  const { isInstallable, isInstalled, isIOS, isInAppBrowser, install } = usePWAInstall();
   const [showGuide, setShowGuide] = useState(false);
   const [guideType, setGuideType] = useState<'ios' | 'android-manual'>('ios');
 
@@ -24,7 +24,9 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
     if (isInstallable) {
       const outcome = await install();
       if (!outcome) {
-        // User dismissed or browser didn't open prompt
+        // If prompt was dismissed or failed, show guide
+        setGuideType(isIOS ? 'ios' : 'android-manual');
+        setShowGuide(true);
       }
     } else if (isIOS) {
       setGuideType('ios');
@@ -43,11 +45,21 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
           type="button"
           id="btn-pwa-install-header"
           onClick={handleClick}
-          className={`min-h-[38px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 dark:text-amber-200 text-xs font-bold border border-amber-500/30 transition-all active:scale-95 cursor-pointer shadow-xs ${className}`}
+          className={`min-h-[38px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl ${
+            isInstallable
+              ? 'bg-amber-500 text-zinc-950 font-extrabold shadow-sm hover:bg-amber-400'
+              : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 dark:text-amber-200 font-bold border border-amber-500/30'
+          } text-xs transition-all active:scale-95 cursor-pointer ${className}`}
           title="Instalar aplicativo na tela de início"
         >
-          <Download className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+          <Download className="w-3.5 h-3.5" />
           <span>Instalar App</span>
+          {isInstallable && (
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-zinc-950 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-zinc-950"></span>
+            </span>
+          )}
         </button>
       )}
 
@@ -57,14 +69,27 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
           type="button"
           id="btn-pwa-install-menu"
           onClick={handleClick}
-          className={`w-full min-h-[44px] px-3.5 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 dark:text-amber-200 font-bold text-xs sm:text-sm flex items-center justify-between border border-amber-500/30 transition cursor-pointer active:scale-98 ${className}`}
+          className={`w-full min-h-[44px] px-3.5 py-2.5 rounded-xl ${
+            isInstallable
+              ? 'bg-amber-500/25 border-amber-500/50 text-amber-950 dark:text-amber-100'
+              : 'bg-amber-500/15 border-amber-500/30 text-amber-900 dark:text-amber-200'
+          } font-bold text-xs sm:text-sm flex items-center justify-between border transition cursor-pointer active:scale-98 ${className}`}
         >
           <div className="flex items-center gap-2.5">
             <Smartphone className="w-4 h-4 text-amber-600 dark:text-amber-400" />
             <span>Instalar App na Tela Inicial</span>
           </div>
-          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-800 dark:text-amber-300">
-            {isIOS ? 'iOS / Safari' : 'Instalar'}
+          <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-800 dark:text-amber-300 flex items-center gap-1">
+            {isInstallable ? (
+              <>
+                <Sparkles className="w-2.5 h-2.5" />
+                Instalar
+              </>
+            ) : isIOS ? (
+              'iOS / Safari'
+            ) : (
+              'Instalar'
+            )}
           </span>
         </button>
       )}
@@ -75,10 +100,14 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
           type="button"
           id="btn-pwa-install-compact"
           onClick={handleClick}
-          className={`min-h-[36px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 dark:text-amber-200 text-xs font-semibold border border-amber-500/30 transition-all active:scale-95 cursor-pointer shadow-xs ${className}`}
+          className={`min-h-[36px] inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl ${
+            isInstallable
+              ? 'bg-amber-500 text-zinc-950 font-bold hover:bg-amber-400 shadow-sm'
+              : 'bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 dark:text-amber-200 font-semibold border border-amber-500/30'
+          } text-xs transition-all active:scale-95 cursor-pointer shadow-xs ${className}`}
           title="Instalar aplicativo no seu celular ou computador"
         >
-          <Download className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+          <Download className="w-3.5 h-3.5" />
           <span>Instalar App</span>
         </button>
       )}
@@ -86,7 +115,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
       {/* Banner Variant (rich callout on login or bottom screen) */}
       {variant === 'banner' && (
         <div
-          className={`p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-zinc-100/50 dark:to-zinc-900/50 border border-amber-500/25 flex items-center justify-between gap-3 ${className}`}
+          className={`p-3 sm:p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-zinc-100/50 dark:to-zinc-900/50 border border-amber-500/30 flex items-center justify-between gap-3 ${className}`}
         >
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-700 dark:text-amber-400 flex-shrink-0">
@@ -97,7 +126,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                 Instale o App do Inventário
               </p>
               <p className="text-[11px] text-zinc-600 dark:text-zinc-400 truncate">
-                Acesse rápido direto da sua tela inicial
+                Funciona em tela cheia com acesso rápido
               </p>
             </div>
           </div>
@@ -108,7 +137,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
             className="flex-shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-zinc-950 text-xs font-extrabold shadow-sm active:scale-95 transition cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
-            <span>Instalar</span>
+            <span>{isInstallable ? 'Instalar Agora' : 'Instalar'}</span>
           </button>
         </div>
       )}
@@ -116,24 +145,24 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
       {/* Guide Modal for iOS / Browser Manual installation */}
       {showGuide && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in duration-200"
           onClick={() => setShowGuide(false)}
         >
           <div
-            className="w-full max-w-sm rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 shadow-2xl space-y-4"
+            className="w-full max-w-md rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-5 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-2 border-b border-zinc-100 dark:border-zinc-800 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center text-amber-600 dark:text-amber-400">
-                  <Smartphone className="w-4 h-4" />
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-600 dark:text-amber-400 flex-shrink-0">
+                  <Smartphone className="w-4.5 h-4.5" />
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
-                    {guideType === 'ios' ? 'Instalar no iPhone / iPad' : 'Instalar Aplicativo'}
+                    {guideType === 'ios' ? 'Instalar no iPhone / iPad' : 'Instalar Aplicativo no Celular'}
                   </h3>
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                    Passo a passo para a tela de início
+                    Orientações para fixar na tela inicial
                   </p>
                 </div>
               </div>
@@ -146,19 +175,32 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
               </button>
             </div>
 
+            {/* In-App Browser Warning (WhatsApp, Gmail, Instagram, etc.) */}
+            {isInAppBrowser && (
+              <div className="p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-start gap-2.5 text-xs text-amber-950 dark:text-amber-200">
+                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-bold">Atenção: Navegador interno detectado</p>
+                  <p className="text-[11px] leading-relaxed text-amber-900 dark:text-amber-300">
+                    Você abriu este link dentro de um aplicativo (WhatsApp, Gmail, etc.). Navegadores internos não permitem instalar aplicativos. Toque no menu de <strong>três pontos (⋮)</strong> e selecione <strong>"Abrir no Chrome"</strong> ou no navegador padrão.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {guideType === 'ios' ? (
               <div className="space-y-3 text-xs text-zinc-700 dark:text-zinc-300">
-                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800">
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800">
                   <span className="w-5 h-5 rounded-full bg-amber-500 text-zinc-950 font-bold flex items-center justify-center text-[11px] flex-shrink-0">
                     1
                   </span>
                   <p className="flex-1 leading-relaxed">
-                    Abra este link no navegador <strong>Safari</strong> e toque no botão de{' '}
+                    Abra este link no navegador oficial <strong>Safari</strong> e toque no botão de{' '}
                     <strong>Compartilhar</strong> (<Share className="w-3.5 h-3.5 inline mx-0.5 text-amber-600 dark:text-amber-400" />) na barra inferior.
                   </p>
                 </div>
 
-                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800">
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800">
                   <span className="w-5 h-5 rounded-full bg-amber-500 text-zinc-950 font-bold flex items-center justify-center text-[11px] flex-shrink-0">
                     2
                   </span>
@@ -168,40 +210,73 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
                   </p>
                 </div>
 
-                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800">
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800">
                   <span className="w-5 h-5 rounded-full bg-amber-500 text-zinc-950 font-bold flex items-center justify-center text-[11px] flex-shrink-0">
                     3
                   </span>
                   <p className="flex-1 leading-relaxed">
-                    No canto superior direito, toque em <strong>Adicionar</strong>. O ícone oficial do Inventário UTFPR aparecerá na sua tela!
+                    No canto superior direito, toque em <strong>Adicionar</strong>. O ícone oficial do Inventário UTFPR aparecerá na sua tela e abrirá como app independente!
                   </p>
                 </div>
               </div>
             ) : (
               <div className="space-y-3 text-xs text-zinc-700 dark:text-zinc-300">
-                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800">
+                {/* Clarification about 'Criar atalho' vs 'Instalar aplicativo' */}
+                <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/20 text-zinc-700 dark:text-zinc-300 space-y-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-blue-900 dark:text-blue-300">
+                    <CheckCircle2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span>Sobre "Criar Atalho" vs "Instalar Aplicativo":</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-zinc-600 dark:text-zinc-400">
+                    No Android, <strong>"Criar atalho"</strong> e <strong>"Instalar aplicativo"</strong> realizam a mesma função de colocar o aplicativo na tela do seu celular com o ícone oficial da UTFPR, funcionando em tela cheia e offline.
+                  </p>
+                </div>
+
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800">
                   <span className="w-5 h-5 rounded-full bg-amber-500 text-zinc-950 font-bold flex items-center justify-center text-[11px] flex-shrink-0">
                     1
                   </span>
-                  <p className="flex-1 leading-relaxed">
-                    No seu navegador (Chrome, Edge ou Samsung Internet), toque no menu de <strong>três pontos (⋮)</strong> no canto superior ou inferior.
-                  </p>
+                  <div className="flex-1 leading-relaxed space-y-1">
+                    <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                      No Google Chrome:
+                    </p>
+                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                      Toque no menu de <strong>três pontos (⋮)</strong> no canto superior direito.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800">
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800">
                   <span className="w-5 h-5 rounded-full bg-amber-500 text-zinc-950 font-bold flex items-center justify-center text-[11px] flex-shrink-0">
                     2
                   </span>
-                  <p className="flex-1 leading-relaxed">
-                    Selecione a opção <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar à tela inicial"</strong>.
-                  </p>
+                  <div className="flex-1 leading-relaxed space-y-1.5">
+                    <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                      Escolha a opção disponível no seu menu:
+                    </p>
+                    <ul className="list-disc pl-4 space-y-1 text-[11px] text-zinc-600 dark:text-zinc-400">
+                      <li>
+                        Se aparecer <strong>"Instalar aplicativo"</strong> ou <strong>"Instalar Inventário..."</strong>: toque nele e clique em <strong>Instalar</strong>.
+                      </li>
+                      <li>
+                        Se aparecer <strong>"Adicionar à tela inicial"</strong> ou <strong>"Criar atalho"</strong>: toque nele e confirme em <strong>Adicionar</strong>. O ícone oficial será criado na sua tela e abrirá diretamente no aplicativo sem a barra do navegador.
+                      </li>
+                    </ul>
+                  </div>
                 </div>
 
-                <div className="flex items-start gap-2.5 p-2.5 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800">
-                  <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                  <p className="flex-1 leading-relaxed text-zinc-600 dark:text-zinc-400">
-                    O aplicativo funcionará em tela cheia como um app nativo, com leitor de código de barras e sincronização direta.
-                  </p>
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-950 border border-zinc-200/80 dark:border-zinc-800">
+                  <span className="w-5 h-5 rounded-full bg-amber-500 text-zinc-950 font-bold flex items-center justify-center text-[11px] flex-shrink-0">
+                    3
+                  </span>
+                  <div className="flex-1 leading-relaxed space-y-1">
+                    <p className="font-semibold text-zinc-900 dark:text-zinc-100">
+                      No Samsung Internet:
+                    </p>
+                    <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
+                      Toque no ícone de download (📥) na barra de endereços ou no menu <strong>☰</strong> &rarr; <strong>Adicionar página a</strong> &rarr; <strong>Tela de aplicativos</strong>.
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
@@ -209,7 +284,7 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
             <button
               type="button"
               onClick={() => setShowGuide(false)}
-              className="w-full py-2.5 rounded-xl bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-800 dark:text-zinc-200 text-xs font-bold transition cursor-pointer"
+              className="w-full py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-zinc-950 text-xs font-bold transition cursor-pointer shadow-sm"
             >
               Entendido
             </button>
@@ -219,3 +294,4 @@ export const PWAInstallButton: React.FC<PWAInstallButtonProps> = ({
     </>
   );
 };
+
