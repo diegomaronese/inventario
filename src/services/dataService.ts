@@ -1,155 +1,24 @@
 import { InventoryItem, ExtraItem, AuthorizedServer, SheetConfig, SyncReport, UserProfile } from '../types';
 
 const STORAGE_KEYS = {
-  ITEMS: 'utfpr_inventario_items_v3',
-  EXTRAS: 'utfpr_inventario_extras_v3',
-  SERVERS: 'utfpr_inventario_servers_v3',
-  CONFIG: 'utfpr_inventario_config_v3',
-  REPORTS: 'utfpr_inventario_reports_v3',
+  ITEMS: 'utfpr_inventario_items_v4',
+  EXTRAS: 'utfpr_inventario_extras_v4',
+  SERVERS: 'utfpr_inventario_servers_v4',
+  CONFIG: 'utfpr_inventario_config_v4',
+  REPORTS: 'utfpr_inventario_reports_v4',
+  OFFICIAL_ITEMS: 'utfpr_inventario_official_items_v4',
+  OFFICIAL_EXTRAS: 'utfpr_inventario_official_extras_v4',
+  OFFICIAL_LAST_SYNC: 'utfpr_inventario_official_last_sync_v4',
 };
 
 // Default Master Spreadsheet ID for UTFPR Campus Apucarana
 export const DEFAULT_SPREADSHEET_ID = '1uv53MeBurlrtZJKZcA6I9CHQvIxc2fzlylRlkvZTSPE';
 
-// Initial Authorized Servers for UTFPR Campus Apucarana matching spreadsheet
-export const INITIAL_SERVERS: AuthorizedServer[] = [
-  {
-    email: 'diegomaronese@utfpr.edu.br',
-    nome: 'Diego Maronese',
-    matriculaSiape: '1111111',
-    departamento: 'COGERH',
-    ambientesDesignados: ['COGERH', 'DIREC'],
-    ativo: true,
-    cargo: 'Presidente',
-  },
-  {
-    email: 'maria@utfpr.edu.br',
-    nome: 'Maria',
-    matriculaSiape: '222222',
-    departamento: 'DEMAP',
-    ambientesDesignados: ['DIREC'],
-    ativo: true,
-    cargo: 'Membro',
-  },
-  {
-    email: 'patrimonio.ap@utfpr.edu.br',
-    nome: 'Mariana Duarte (Comissão Central)',
-    matriculaSiape: '1783920',
-    departamento: 'Comissão Permanente de Inventário',
-    ambientesDesignados: ['TODOS'],
-    ativo: true,
-    cargo: 'Vice-Presidente',
-  },
-];
+// Initial Authorized Servers (Strictly empty: always populated live from spreadsheet)
+export const INITIAL_SERVERS: AuthorizedServer[] = [];
 
-// Initial realistic Inventory Items matching spreadsheet columns
-export const INITIAL_ITEMS: InventoryItem[] = [
-  {
-    id: 'ITEM-96552-0',
-    bloco: 'Bloco B',
-    ambiente: 'COGERH',
-    patrimonio: '96552',
-    patrimonioAntigo: '3334',
-    descricao: 'Cadeira Fixa',
-    status: 'PENDENTE',
-    estadoConservacao: 'BOM',
-  },
-  {
-    id: 'ITEM-96551-1',
-    bloco: 'Bloco B',
-    ambiente: 'COGERH',
-    patrimonio: '96551',
-    patrimonioAntigo: '3333',
-    descricao: 'Cadeira Fixa',
-    status: 'PENDENTE',
-    estadoConservacao: 'BOM',
-  },
-  {
-    id: 'ITEM-96550-2',
-    bloco: 'Bloco B',
-    ambiente: 'COGERH',
-    patrimonio: '96550',
-    patrimonioAntigo: '3332',
-    descricao: 'Cadeira Fixa',
-    status: 'PENDENTE',
-    estadoConservacao: 'BOM',
-  },
-  {
-    id: 'ITEM-96549-3',
-    bloco: 'Bloco B',
-    ambiente: 'COGERH',
-    patrimonio: '96549',
-    patrimonioAntigo: '3331',
-    descricao: 'Cadeira Fixa',
-    status: 'PENDENTE',
-    estadoConservacao: 'BOM',
-  },
-  {
-    id: 'ITEM-96548-4',
-    bloco: 'Bloco B',
-    ambiente: 'COGERH',
-    patrimonio: '96548',
-    patrimonioAntigo: '3330',
-    descricao: 'Cadeira Fixa',
-    status: 'PENDENTE',
-    estadoConservacao: 'BOM',
-  },
-  {
-    id: 'ITEM-96547-5',
-    bloco: 'Bloco F',
-    ambiente: 'DIRPLAD',
-    patrimonio: '96547',
-    patrimonioAntigo: '3329',
-    descricao: 'Cadeira Fixa',
-    status: 'PENDENTE',
-    estadoConservacao: 'BOM',
-  },
-  {
-    id: 'ITEM-96546-6',
-    bloco: 'Bloco F',
-    ambiente: 'DIRPLAD',
-    patrimonio: '96546',
-    descricao: 'Computador',
-    status: 'PENDENTE',
-    estadoConservacao: 'BOM',
-  },
-  {
-    id: 'ITEM-96545-7',
-    bloco: 'Bloco F',
-    ambiente: 'DIRPLAD',
-    patrimonio: '96545',
-    descricao: 'Cadeira Fixa',
-    status: 'PENDENTE',
-    estadoConservacao: 'BOM',
-  },
-  {
-    id: 'ITEM-96544-8',
-    bloco: 'Bloco F',
-    ambiente: 'DEOFI',
-    patrimonio: '96544',
-    descricao: 'Cadeira Fixa',
-    status: 'PENDENTE',
-    estadoConservacao: 'BOM',
-  },
-  {
-    id: 'ITEM-96543-9',
-    bloco: 'Bloco F',
-    ambiente: 'DEOFI',
-    patrimonio: '96543',
-    descricao: 'Cadeira Fixa',
-    status: 'PENDENTE',
-    estadoConservacao: 'BOM',
-  },
-  {
-    id: 'ITEM-15154-10',
-    bloco: 'Bloco M',
-    ambiente: 'DIREC',
-    patrimonio: '15154',
-    descricao: 'Mesa',
-    status: 'PENDENTE',
-    estadoConservacao: 'BOM',
-  },
-];
+// Initial Inventory Items (Strictly empty: always populated live from spreadsheet)
+export const INITIAL_ITEMS: InventoryItem[] = [];
 
 export const DEFAULT_SHEET_CONFIG: SheetConfig = {
   spreadsheetId: DEFAULT_SPREADSHEET_ID,
@@ -338,66 +207,395 @@ function mapRowToExtraItem(cols: string[], row: any[], index: number): ExtraItem
   };
 }
 
+function safeGetItem(key: string): string | null {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return localStorage.getItem(key);
+    }
+  } catch {}
+  return null;
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(key, value);
+    }
+  } catch {}
+}
+
+function safeRemoveItem(key: string): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem(key);
+    }
+  } catch {}
+}
+
+function cleanupLegacyStorage() {
+  const keysToRemove = [
+    'utfpr_inventario_servers_v3',
+    'utfpr_inventario_servers_v2',
+    'utfpr_inventario_servers_v1',
+    'utfpr_inventario_items_v3',
+    'utfpr_inventario_items_v2',
+    'utfpr_inventario_items_v1',
+    'utfpr_inventario_user_session_v3',
+    'utfpr_inventario_user_session_v2',
+    'utfpr_inventario_user_session_v1',
+    'utfpr_inventario_user',
+  ];
+  keysToRemove.forEach((k) => safeRemoveItem(k));
+}
+
 class DataService {
   private items: InventoryItem[] = [];
   private extraItems: ExtraItem[] = [];
   private servers: AuthorizedServer[] = [];
   private sheetConfig: SheetConfig = { ...DEFAULT_SHEET_CONFIG };
   private reports: SyncReport[] = [];
+  private officialItems: InventoryItem[] = [];
+  private officialExtraItems: ExtraItem[] = [];
+  private officialLastSyncedAt: string | null = null;
   private isFetchingSheet: boolean = false;
+  private isFetchingOfficial: boolean = false;
+  private listeners: Set<() => void> = new Set();
+  private inFlightFetchPromise: Promise<{
+    success: boolean;
+    message: string;
+    itemsCount: number;
+    serversCount: number;
+    extrasCount: number;
+  }> | null = null;
+  private inFlightServersFetchPromise: Promise<{
+    success: boolean;
+    serversCount: number;
+    message: string;
+  }> | null = null;
+  private inFlightOfficialPromise: Promise<{
+    success: boolean;
+    items: InventoryItem[];
+    extraItems: ExtraItem[];
+    servers: AuthorizedServer[];
+    lastSyncedAt: string;
+    message: string;
+  }> | null = null;
 
   constructor() {
     this.initData();
-    // Auto-fetch data from the master Google Sheet immediately
-    this.fetchDataFromGoogleSheets().catch((err) => {
-      console.warn('Initial Google Sheets fetch deferred:', err);
+    // Auto-fetch ONLY authorized servers on startup so Login screen always has fresh authorized users
+    this.fetchAuthorizedServersFromGoogleSheets().catch((err) => {
+      console.warn('Initial authorized servers fetch deferred:', err);
     });
   }
 
+  public subscribe(listener: () => void): () => void {
+    this.listeners.add(listener);
+    return () => {
+      this.listeners.delete(listener);
+    };
+  }
+
+  private notifyListeners() {
+    this.listeners.forEach((listener) => {
+      try {
+        listener();
+      } catch (err) {
+        console.error('Erro ao notificar listener:', err);
+      }
+    });
+  }
+
+  public isFetching(): boolean {
+    return this.isFetchingSheet;
+  }
+
+  public hasServersLoaded(): boolean {
+    return this.servers.length > 0;
+  }
+
+  public hasInitialItemsLoaded(): boolean {
+    return this.items.length > 0;
+  }
+
+  public async ensureDataLoaded(): Promise<void> {
+    if (this.servers.length === 0) {
+      await this.fetchAuthorizedServersFromGoogleSheets();
+    }
+    if (this.items.length === 0) {
+      await this.fetchDataFromGoogleSheets();
+    }
+  }
+
   private initData() {
+    cleanupLegacyStorage();
     try {
-      const storedItems = localStorage.getItem(STORAGE_KEYS.ITEMS);
+      const storedItems = safeGetItem(STORAGE_KEYS.ITEMS);
       if (storedItems) {
         this.items = JSON.parse(storedItems);
       } else {
-        this.items = INITIAL_ITEMS;
+        this.items = [];
       }
 
-      const storedExtras = localStorage.getItem(STORAGE_KEYS.EXTRAS);
+      const storedExtras = safeGetItem(STORAGE_KEYS.EXTRAS);
       if (storedExtras) {
         this.extraItems = JSON.parse(storedExtras);
       } else {
         this.extraItems = [];
       }
 
-      const storedServers = localStorage.getItem(STORAGE_KEYS.SERVERS);
+      const storedServers = safeGetItem(STORAGE_KEYS.SERVERS);
       if (storedServers) {
-        this.servers = JSON.parse(storedServers);
+        const parsed: AuthorizedServer[] = JSON.parse(storedServers);
+        // Exclude any legacy mock servers that might have persisted in cache
+        this.servers = parsed.filter(
+          (s) =>
+            s.email !== 'patrimonio.ap@utfpr.edu.br' &&
+            s.nome !== 'Mariana Duarte (Comissão Central)'
+        );
       } else {
-        this.servers = INITIAL_SERVERS;
+        this.servers = [];
       }
 
       this.sheetConfig = { ...DEFAULT_SHEET_CONFIG };
-      const storedLastSync = localStorage.getItem('utfpr_inventario_last_sync');
+      const storedLastSync = safeGetItem('utfpr_inventario_last_sync');
       if (storedLastSync) {
         this.sheetConfig.lastSyncedAt = storedLastSync;
       }
-      const storedWebhook = localStorage.getItem('utfpr_inventario_webhook_url');
+      const storedWebhook = safeGetItem('utfpr_inventario_webhook_url');
       if (storedWebhook) {
         this.sheetConfig.webhookUrl = storedWebhook;
       }
 
-      const storedReports = localStorage.getItem(STORAGE_KEYS.REPORTS);
+      const storedReports = safeGetItem(STORAGE_KEYS.REPORTS);
       if (storedReports) {
         this.reports = JSON.parse(storedReports);
       }
+
+      const storedOfficialItems = safeGetItem(STORAGE_KEYS.OFFICIAL_ITEMS);
+      if (storedOfficialItems) {
+        try {
+          this.officialItems = JSON.parse(storedOfficialItems);
+        } catch {}
+      }
+
+      const storedOfficialExtras = safeGetItem(STORAGE_KEYS.OFFICIAL_EXTRAS);
+      if (storedOfficialExtras) {
+        try {
+          this.officialExtraItems = JSON.parse(storedOfficialExtras);
+        } catch {}
+      }
+
+      this.officialLastSyncedAt = safeGetItem(STORAGE_KEYS.OFFICIAL_LAST_SYNC);
     } catch (e) {
-      console.warn('Erro ao carregar dados do LocalStorage, iniciando base padrão', e);
-      this.items = INITIAL_ITEMS;
-      this.servers = INITIAL_SERVERS;
+      console.warn('Erro ao carregar dados do LocalStorage, iniciando limpo', e);
+      this.items = [];
+      this.servers = [];
       this.extraItems = [];
+      this.officialItems = [];
+      this.officialExtraItems = [];
+      this.officialLastSyncedAt = null;
       this.sheetConfig = { ...DEFAULT_SHEET_CONFIG };
     }
+  }
+
+  // Getters for strictly official spreadsheet data (President/Vice management)
+  public getOfficialItems(): InventoryItem[] {
+    return this.officialItems;
+  }
+
+  public getOfficialExtraItems(): ExtraItem[] {
+    return this.officialExtraItems;
+  }
+
+  public getOfficialLastSyncedAt(): string | null {
+    return this.officialLastSyncedAt;
+  }
+
+  public isFetchingOfficialData(): boolean {
+    return this.isFetchingOfficial;
+  }
+
+  // Fetch official data strictly from Google Sheets for the President/Vice Management Dashboard
+  // This does NOT merge local uncommitted changes from field conferences
+  public async fetchOfficialSpreadsheetData(): Promise<{
+    success: boolean;
+    items: InventoryItem[];
+    extraItems: ExtraItem[];
+    servers: AuthorizedServer[];
+    lastSyncedAt: string;
+    message: string;
+  }> {
+    if (this.isFetchingOfficial && this.inFlightOfficialPromise) {
+      return this.inFlightOfficialPromise;
+    }
+
+    const runFetch = async () => {
+      this.isFetchingOfficial = true;
+      const spreadsheetId = this.sheetConfig.spreadsheetId;
+
+      try {
+        const timestamp = Date.now();
+        const sheetBens = this.sheetConfig.sheetNameInventario || 'Inventario_Bens';
+        const bensUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
+          sheetBens
+        )}&t=${timestamp}`;
+
+        const sheetServ = this.sheetConfig.sheetNameServidores || 'Servidores_Autorizados';
+        const servUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
+          sheetServ
+        )}&t=${timestamp}`;
+
+        const sheetExtra = this.sheetConfig.sheetNameExtras || 'Itens_Nao_Cadastrados';
+        const extraUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
+          sheetExtra
+        )}&t=${timestamp}`;
+
+        const [resBens, resServ, resExtra] = await Promise.all([
+          fetch(bensUrl).catch(() => null),
+          fetch(servUrl).catch(() => null),
+          fetch(extraUrl).catch(() => null),
+        ]);
+
+        let parsedItems: InventoryItem[] = [];
+        let parsedServers: AuthorizedServer[] = [];
+        let parsedExtras: ExtraItem[] = [];
+
+        if (resBens && resBens.ok) {
+          const textBens = await resBens.text();
+          const { cols, rows } = parseGvizResponse(textBens);
+          parsedItems = rows
+            .map((row, idx) => mapRowToInventoryItem(cols, row, idx))
+            .filter((item): item is InventoryItem => item !== null);
+        }
+
+        if (resServ && resServ.ok) {
+          const textServ = await resServ.text();
+          const { cols, rows } = parseGvizResponse(textServ);
+          parsedServers = rows
+            .map((row) => mapRowToServer(cols, row))
+            .filter((srv): srv is AuthorizedServer => srv !== null);
+        }
+
+        if (resExtra && resExtra.ok) {
+          const textExtra = await resExtra.text();
+          const { cols, rows } = parseGvizResponse(textExtra);
+          parsedExtras = rows
+            .map((row, idx) => mapRowToExtraItem(cols, row, idx))
+            .filter((ex): ex is ExtraItem => ex !== null);
+        }
+
+        const now = new Date().toLocaleString('pt-BR');
+
+        if (parsedItems.length > 0 || parsedExtras.length > 0 || parsedServers.length > 0) {
+          // Strictly official data from spreadsheet without local conference merges
+          this.officialItems = parsedItems;
+          this.officialExtraItems = parsedExtras;
+          this.officialLastSyncedAt = now;
+          if (parsedServers.length > 0) {
+            this.servers = parsedServers;
+            this.saveServers();
+          }
+
+          safeSetItem(STORAGE_KEYS.OFFICIAL_ITEMS, JSON.stringify(this.officialItems));
+          safeSetItem(STORAGE_KEYS.OFFICIAL_EXTRAS, JSON.stringify(this.officialExtraItems));
+          safeSetItem(STORAGE_KEYS.OFFICIAL_LAST_SYNC, now);
+          this.notifyListeners();
+
+          return {
+            success: true,
+            items: this.officialItems,
+            extraItems: this.officialExtraItems,
+            servers: this.servers,
+            lastSyncedAt: now,
+            message: `Dados consolidados da planilha oficial atualizados com sucesso (${parsedItems.length} bens, ${parsedExtras.length} extras).`,
+          };
+        }
+
+        return {
+          success: false,
+          items: this.officialItems,
+          extraItems: this.officialExtraItems,
+          servers: this.servers,
+          lastSyncedAt: this.officialLastSyncedAt || now,
+          message: 'Nenhum dado retornado da planilha oficial.',
+        };
+      } catch (err: any) {
+        console.error('Erro ao buscar dados oficiais da planilha para a gestão:', err);
+        return {
+          success: false,
+          items: this.officialItems,
+          extraItems: this.officialExtraItems,
+          servers: this.servers,
+          lastSyncedAt: this.officialLastSyncedAt || new Date().toLocaleString('pt-BR'),
+          message: err?.message || 'Falha ao buscar dados oficiais da planilha.',
+        };
+      } finally {
+        this.isFetchingOfficial = false;
+        this.inFlightOfficialPromise = null;
+      }
+    };
+
+    this.inFlightOfficialPromise = runFetch();
+    return this.inFlightOfficialPromise;
+  }
+
+  // Fetch only authorized servers from Google Sheets (called on app start and login screen)
+  public async fetchAuthorizedServersFromGoogleSheets(): Promise<{
+    success: boolean;
+    serversCount: number;
+    message: string;
+  }> {
+    if (this.inFlightServersFetchPromise) {
+      return this.inFlightServersFetchPromise;
+    }
+
+    const runFetch = async () => {
+      const spreadsheetId = this.sheetConfig.spreadsheetId;
+      try {
+        const sheetServ = this.sheetConfig.sheetNameServidores || 'Servidores_Autorizados';
+        const servUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
+          sheetServ
+        )}`;
+
+        const resServ = await fetch(servUrl).catch(() => null);
+        if (resServ && resServ.ok) {
+          const textServ = await resServ.text();
+          const { cols, rows } = parseGvizResponse(textServ);
+          const parsedServers = rows
+            .map((row) => mapRowToServer(cols, row))
+            .filter((srv): srv is AuthorizedServer => srv !== null);
+
+          if (parsedServers.length > 0) {
+            this.servers = parsedServers;
+            this.saveServers();
+            this.notifyListeners();
+            return {
+              success: true,
+              serversCount: parsedServers.length,
+              message: `${parsedServers.length} servidores sincronizados da planilha oficial.`,
+            };
+          }
+        }
+
+        return {
+          success: false,
+          serversCount: this.servers.length,
+          message: 'Nenhum servidor retornado da aba Servidores_Autorizados.',
+        };
+      } catch (err: any) {
+        return {
+          success: false,
+          serversCount: this.servers.length,
+          message: err?.message || 'Falha ao buscar servidores.',
+        };
+      } finally {
+        this.inFlightServersFetchPromise = null;
+      }
+    };
+
+    this.inFlightServersFetchPromise = runFetch();
+    return this.inFlightServersFetchPromise;
   }
 
   // Fetch live data directly from Google Sheets
@@ -408,17 +606,12 @@ class DataService {
     serversCount: number;
     extrasCount: number;
   }> {
-    if (this.isFetchingSheet) {
-      return {
-        success: true,
-        message: 'Sincronização já em andamento...',
-        itemsCount: this.items.length,
-        serversCount: this.servers.length,
-        extrasCount: this.extraItems.length,
-      };
+    if (this.isFetchingSheet && this.inFlightFetchPromise) {
+      return this.inFlightFetchPromise;
     }
 
-    this.isFetchingSheet = true;
+    const runFetch = async () => {
+      this.isFetchingSheet = true;
     const spreadsheetId = this.sheetConfig.spreadsheetId;
 
     try {
@@ -479,8 +672,34 @@ class DataService {
 
       // Update in-memory state and localStorage if data retrieved
       if (parsedItems.length > 0 || parsedServers.length > 0) {
+        // Preserve any items verified locally by user
         if (parsedItems.length > 0) {
-          this.items = parsedItems;
+          if (this.items.length > 0) {
+            const localVerifiedMap = new Map<string, InventoryItem>();
+            this.items.forEach((item) => {
+              if (item.status !== 'PENDENTE') {
+                localVerifiedMap.set(item.patrimonio, item);
+              }
+            });
+            this.items = parsedItems.map((sheetItem) => {
+              const local = localVerifiedMap.get(sheetItem.patrimonio);
+              if (local && local.status !== 'PENDENTE') {
+                return {
+                  ...sheetItem,
+                  status: local.status,
+                  estadoConservacao: local.estadoConservacao || sheetItem.estadoConservacao,
+                  verificadoEm: local.verificadoEm || sheetItem.verificadoEm,
+                  verificadoPor: local.verificadoPor || sheetItem.verificadoPor,
+                  verificadoPorNome: local.verificadoPorNome || sheetItem.verificadoPorNome,
+                  ambienteVerificado: local.ambienteVerificado || sheetItem.ambienteVerificado,
+                  observacoes: local.observacoes || sheetItem.observacoes,
+                };
+              }
+              return sheetItem;
+            });
+          } else {
+            this.items = parsedItems;
+          }
           this.saveItems();
         }
 
@@ -490,11 +709,14 @@ class DataService {
         }
 
         if (parsedExtras.length > 0) {
-          this.extraItems = parsedExtras;
+          const sheetPatrimonios = new Set(parsedExtras.map((e) => e.patrimonio));
+          const localOnly = this.extraItems.filter((e) => !sheetPatrimonios.has(e.patrimonio));
+          this.extraItems = [...parsedExtras, ...localOnly];
           this.saveExtras();
         }
 
         this.updateLastSyncTime();
+        this.notifyListeners();
 
         return {
           success: true,
@@ -517,49 +739,34 @@ class DataService {
       };
     } finally {
       this.isFetchingSheet = false;
+      this.inFlightFetchPromise = null;
     }
-  }
+  };
+
+  this.inFlightFetchPromise = runFetch();
+  return this.inFlightFetchPromise;
+}
 
   public saveItems() {
-    try {
-      localStorage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify(this.items));
-    } catch (e) {
-      console.error('Falha ao salvar itens no localStorage', e);
-    }
+    safeSetItem(STORAGE_KEYS.ITEMS, JSON.stringify(this.items));
   }
 
   public saveExtras() {
-    try {
-      localStorage.setItem(STORAGE_KEYS.EXTRAS, JSON.stringify(this.extraItems));
-    } catch (e) {
-      console.error('Falha ao salvar extras no localStorage', e);
-    }
+    safeSetItem(STORAGE_KEYS.EXTRAS, JSON.stringify(this.extraItems));
   }
 
   public saveServers() {
-    try {
-      localStorage.setItem(STORAGE_KEYS.SERVERS, JSON.stringify(this.servers));
-    } catch (e) {
-      console.error('Falha ao salvar servidores no localStorage', e);
-    }
+    safeSetItem(STORAGE_KEYS.SERVERS, JSON.stringify(this.servers));
   }
 
   public updateLastSyncTime() {
     const now = new Date().toISOString();
     this.sheetConfig.lastSyncedAt = now;
-    try {
-      localStorage.setItem('utfpr_inventario_last_sync', now);
-    } catch (e) {
-      console.error('Falha ao salvar timestamp de sincronização', e);
-    }
+    safeSetItem('utfpr_inventario_last_sync', now);
   }
 
   public saveReports() {
-    try {
-      localStorage.setItem(STORAGE_KEYS.REPORTS, JSON.stringify(this.reports));
-    } catch (e) {
-      console.error('Falha ao salvar relatórios no localStorage', e);
-    }
+    safeSetItem(STORAGE_KEYS.REPORTS, JSON.stringify(this.reports));
   }
 
   // Authorizations

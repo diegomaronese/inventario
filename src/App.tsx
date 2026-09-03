@@ -25,6 +25,12 @@ export default function App() {
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
+  // Official spreadsheet data (Used exclusively by President & Vice-President for real-time institutional management)
+  const [officialItems, setOfficialItems] = useState<InventoryItem[]>(() => dataService.getOfficialItems());
+  const [officialExtraItems, setOfficialExtraItems] = useState<ExtraItem[]>(() => dataService.getOfficialExtraItems());
+  const [officialLastSynced, setOfficialLastSynced] = useState<string | null>(() => dataService.getOfficialLastSyncedAt());
+  const [isLoadingOfficial, setIsLoadingOfficial] = useState<boolean>(false);
+
   // Modals state
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isReviewOpen, setIsReviewOpen] = useState(false);
@@ -151,21 +157,55 @@ export default function App() {
     setExtraItems([...dataService.getExtraItems()]);
   }, []);
 
-  // Auto-fetch data from the official Google Sheet on startup
+  // Subscribe to reactive updates from dataService
+  useEffect(() => {
+    const unsubscribe = dataService.subscribe(() => {
+      refreshData();
+    });
+    return unsubscribe;
+  }, [refreshData]);
+
+  // Revalidate current user session against real sheet data
+  useEffect(() => {
+    if (currentUser) {
+      const valid = authService.revalidateSession();
+      if (!valid) {
+        showToast('Sessão encerrada: servidor não consta na planilha oficial da UTFPR.', 'warning');
+        setCurrentUser(null);
+      } else if (
+        valid.cargo !== currentUser.cargo ||
+        valid.departamento !== currentUser.departamento ||
+        valid.name !== currentUser.name
+      ) {
+        setCurrentUser({ ...valid });
+      }
+    }
+  }, [currentUser, items, showToast]);
+
+  // Carrega a lista de locais e itens da planilha APENAS na primeira vez que o usuário faz login (se ainda não carregados)
+  // Após a primeira carga, os registros locais são preservados e não são mais atualizados automaticamente ao sair/entrar
   useEffect(() => {
     let isMounted = true;
-    const fetchLiveSheet = async () => {
+    const checkInitialItemsLoad = async () => {
+      if (!currentUser) return;
+
+      // Se os itens já foram carregados previamente, mantém os dados locais intactos
+      if (dataService.hasInitialItemsLoaded()) {
+        return;
+      }
+
+      // Apenas no primeiro acesso (quando a lista local de itens ainda estiver vazia)
       setIsSyncing(true);
       try {
         const res = await dataService.fetchDataFromGoogleSheets();
         if (isMounted) {
           refreshData();
           if (res.itemsCount > 0) {
-            showToast(`Dados atualizados da planilha padrão: ${res.itemsCount} bem(ns) sincronizados.`, 'success');
+            showToast(`Carga inicial concluída: ${res.itemsCount} bem(ns) sincronizados da planilha da UTFPR.`, 'success');
           }
         }
       } catch (err) {
-        console.warn('Sync on boot:', err);
+        console.warn('Carga inicial de bens:', err);
       } finally {
         if (isMounted) {
           setIsSyncing(false);
@@ -173,11 +213,67 @@ export default function App() {
       }
     };
 
-    fetchLiveSheet();
+    checkInitialItemsLoad();
     return () => {
       isMounted = false;
     };
-  }, [refreshData, showToast]);
+  }, [currentUser, refreshData, showToast]);
+
+  // Fetch latest official records from the master Google Sheet (President/Vice management)
+  const handleRefreshOfficialData = useCallback(
+    async (showNotification: boolean = true) => {
+      setIsLoadingOfficial(true);
+      try {
+        const res = await dataService.fetchOfficialSpreadsheetData();
+        setOfficialItems([...res.items]);
+        setOfficialExtraItems([...res.extraItems]);
+        setOfficialLastSynced(res.lastSyncedAt);
+        if (showNotification) {
+          if (res.success) {
+            showToast(`Dados consolidados da planilha oficial atualizados (${res.items.length} bens).`, 'success');
+          } else {
+            showToast(res.message, 'warning');
+          }
+        }
+      } catch (err) {
+        console.warn('Falha ao atualizar dados oficiais da planilha:', err);
+        if (showNotification) {
+          showToast('Não foi possível conectar à planilha oficial no momento.', 'warning');
+        }
+      } finally {
+        setIsLoadingOfficial(false);
+      }
+    },
+    [showToast]
+  );
+
+  // Automatically fetch fresh official spreadsheet data whenever the President or Vice-President logs in or accesses the app
+  useEffect(() => {
+    let isMounted = true;
+    if (currentUser && dataService.isPresidenteOrVice(currentUser)) {
+      setIsLoadingOfficial(true);
+      dataService
+        .fetchOfficialSpreadsheetData()
+        .then((res) => {
+          if (isMounted) {
+            setOfficialItems([...res.items]);
+            setOfficialExtraItems([...res.extraItems]);
+            setOfficialLastSynced(res.lastSyncedAt);
+          }
+        })
+        .catch((err) => {
+          console.warn('Erro ao carregar dados oficiais da planilha para a gestão:', err);
+        })
+        .finally(() => {
+          if (isMounted) {
+            setIsLoadingOfficial(false);
+          }
+        });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [currentUser]);
 
   // Handle barcode scanned from camera or manual search
   const handleBarcodeScanned = useCallback(
@@ -351,9 +447,13 @@ export default function App() {
   const handleHeaderSync = async () => {
     setIsSyncing(true);
     try {
-      const pullRes = await dataService.pullSpreadsheetUpdates();
-      refreshData();
-      showToast(pullRes.message, 'success');
+      if (currentUser && dataService.isPresidenteOrVice(currentUser)) {
+        await handleRefreshOfficialData(true);
+      } else {
+        const pullRes = await dataService.pullSpreadsheetUpdates();
+        refreshData();
+        showToast(pullRes.message, 'success');
+      }
     } catch {
       showToast('Base sincronizada com a planilha padrão.', 'info');
     } finally {
@@ -422,12 +522,45 @@ export default function App() {
       {/* Main Content Workspace: Management Dashboard for President/Vice, Conference Dashboard for members */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6">
         {dataService.isPresidenteOrVice(currentUser) ? (
-          <PresidentManagementDashboard
-            user={currentUser}
-            items={items}
-            extraItems={extraItems}
-            onOpenReports={() => setIsReportsOpen(true)}
-          />
+          officialItems.length === 0 && isLoadingOfficial ? (
+            <div className="flex flex-col items-center justify-center py-20 px-4 text-center space-y-4 bg-white dark:bg-zinc-900/80 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-amber-500 animate-spin" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                  Carregando dados consolidados da Planilha Oficial...
+                </h3>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm">
+                  Consultando registros salvos na planilha central da UTFPR para os gráficos e relatórios da gestão.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <PresidentManagementDashboard
+              user={currentUser}
+              items={officialItems}
+              extraItems={officialExtraItems}
+              lastSyncedAt={officialLastSynced}
+              isLoading={isLoadingOfficial}
+              onRefreshOfficialData={() => handleRefreshOfficialData(true)}
+              onOpenReports={() => setIsReportsOpen(true)}
+            />
+          )
+        ) : items.length === 0 && isSyncing ? (
+          <div className="flex flex-col items-center justify-center py-20 px-4 text-center space-y-4 bg-white dark:bg-zinc-900/80 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 shadow-sm">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+              <Sparkles className="w-6 h-6 text-amber-500 animate-spin" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="text-base font-bold text-zinc-900 dark:text-zinc-100">
+                Carregando bens patrimoniais...
+              </h3>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-sm">
+                Buscando inventário atualizado da Planilha Oficial da UTFPR Campus Apucarana.
+              </p>
+            </div>
+          </div>
         ) : (
           <ConferenceDashboard
             user={currentUser}
@@ -533,8 +666,9 @@ export default function App() {
           isOpen={isReportsOpen}
           onClose={() => setIsReportsOpen(false)}
           user={currentUser}
-          items={items}
-          extraItems={extraItems}
+          items={officialItems}
+          extraItems={officialExtraItems}
+          lastSyncedAt={officialLastSynced}
         />
       )}
     </div>

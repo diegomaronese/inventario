@@ -1,7 +1,7 @@
 import { UserProfile, AuthorizedServer } from '../types';
 import { dataService } from './dataService';
 
-const AUTH_USER_KEY = 'utfpr_inventario_user_session_v2';
+const AUTH_USER_KEY = 'utfpr_inventario_user_session_v4';
 
 class AuthService {
   private currentUser: UserProfile | null = null;
@@ -24,11 +24,42 @@ class AuthService {
           user.departamento = server.departamento;
           user.matriculaSiape = server.matriculaSiape;
           user.role = dataService.isPresidenteOrVice(server) ? 'COMISSAO_INVENTARIO' : 'SERVIDOR';
+          this.currentUser = user;
+        } else if (dataService.getServers().length === 0) {
+          // Servers list hasn't loaded yet; hold session until live validation
+          this.currentUser = user;
+        } else {
+          // Servers are loaded and this user is NOT in the official spreadsheet
+          this.currentUser = null;
+          try {
+            localStorage.removeItem(AUTH_USER_KEY);
+          } catch (_) {}
         }
-        this.currentUser = user;
       }
     } catch {
       this.currentUser = null;
+    }
+  }
+
+  public revalidateSession(): UserProfile | null {
+    if (!this.currentUser) return null;
+    const servers = dataService.getServers();
+    if (servers.length === 0) return this.currentUser;
+
+    const server = dataService.checkServerAuthorization(this.currentUser.email);
+    if (server && server.ativo) {
+      this.currentUser.cargo = server.cargo || this.currentUser.cargo || 'Membro';
+      this.currentUser.ambientesDesignados = server.ambientesDesignados;
+      this.currentUser.departamento = server.departamento;
+      this.currentUser.matriculaSiape = server.matriculaSiape;
+      this.currentUser.name = server.nome || this.currentUser.name;
+      this.currentUser.role = dataService.isPresidenteOrVice(server) ? 'COMISSAO_INVENTARIO' : 'SERVIDOR';
+      this.saveSession(this.currentUser);
+      return this.currentUser;
+    } else {
+      console.warn('Usuário de sessão anterior não encontrado na planilha oficial. Desconectando.');
+      this.logout();
+      return null;
     }
   }
 

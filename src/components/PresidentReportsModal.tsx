@@ -26,6 +26,7 @@ interface PresidentReportsModalProps {
   user: UserProfile;
   items: InventoryItem[];
   extraItems: ExtraItem[];
+  lastSyncedAt?: string | null;
 }
 
 type ReportTab = 'GERAL' | 'PENDENCIAS' | 'ANDAMENTO' | 'DIVERGENCIAS';
@@ -36,6 +37,7 @@ export const PresidentReportsModal: React.FC<PresidentReportsModalProps> = ({
   user,
   items,
   extraItems,
+  lastSyncedAt,
 }) => {
   const [activeTab, setActiveTab] = useState<ReportTab>('GERAL');
   const [selectedBlocoFilter, setSelectedBlocoFilter] = useState<string>('TODOS');
@@ -134,9 +136,13 @@ export const PresidentReportsModal: React.FC<PresidentReportsModalProps> = ({
                 <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/25">
                   Presidência da Comissão
                 </span>
+                <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border border-emerald-500/25 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                  <span>Base Planilha Oficial {lastSyncedAt ? `(${lastSyncedAt})` : ''}</span>
+                </span>
               </div>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 truncate mt-0.5">
-                Gere e exporte relatórios oficiais em PDF com dados consolidados do inventário patrimonial
+                Relatórios consolidados estritamente a partir dos registros salvos na Planilha Central pelos conferentes
               </p>
             </div>
           </div>

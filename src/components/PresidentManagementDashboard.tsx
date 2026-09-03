@@ -31,6 +31,7 @@ import {
   Layers,
   ArrowUpRight,
   Filter,
+  RefreshCw,
 } from 'lucide-react';
 
 interface PresidentManagementDashboardProps {
@@ -38,6 +39,9 @@ interface PresidentManagementDashboardProps {
   items: InventoryItem[];
   extraItems: ExtraItem[];
   onOpenReports: () => void;
+  lastSyncedAt?: string | null;
+  isLoading?: boolean;
+  onRefreshOfficialData?: () => Promise<void> | void;
 }
 
 export const PresidentManagementDashboard: React.FC<PresidentManagementDashboardProps> = ({
@@ -45,6 +49,9 @@ export const PresidentManagementDashboard: React.FC<PresidentManagementDashboard
   items,
   extraItems,
   onOpenReports,
+  lastSyncedAt,
+  isLoading = false,
+  onRefreshOfficialData,
 }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
@@ -253,8 +260,22 @@ export const PresidentManagementDashboard: React.FC<PresidentManagementDashboard
             </p>
           </div>
 
-          {/* Quick PDF Export Hub for the President / Vice */}
+          {/* Quick PDF Export Hub and Spreadsheet Sync for the President / Vice */}
           <div className="flex items-center gap-2 flex-wrap">
+            {onRefreshOfficialData && (
+              <button
+                type="button"
+                id="btn-president-refresh-sheet"
+                onClick={() => onRefreshOfficialData()}
+                disabled={isLoading}
+                className="min-h-[42px] px-3.5 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-900 dark:text-amber-200 border border-amber-500/30 font-semibold text-xs flex items-center gap-2 transition active:scale-95 cursor-pointer disabled:opacity-50"
+                title="Consultar dados em tempo real da planilha padrão"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-amber-600 dark:text-amber-400 ${isLoading ? 'animate-spin' : ''}`} />
+                <span>{isLoading ? 'Consultando Planilha...' : 'Atualizar da Planilha'}</span>
+              </button>
+            )}
+
             <button
               type="button"
               id="btn-president-open-reports"
@@ -266,18 +287,6 @@ export const PresidentManagementDashboard: React.FC<PresidentManagementDashboard
               <FileText className="w-4 h-4 text-amber-400 dark:text-zinc-950" />
               <span>Central de Relatórios (PDF)</span>
             </button>
-
-            <button
-              type="button"
-              id="btn-quick-export-general"
-              onClick={() => handleExportPDF('GERAL')}
-              disabled={isExporting}
-              className="min-h-[42px] px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-900 dark:text-amber-200 border border-amber-500/30 font-semibold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
-              title="Exportar Relatório Geral do Campus em PDF"
-            >
-              <Download className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              <span>Exportar PDF Geral</span>
-            </button>
           </div>
         </div>
 
@@ -286,10 +295,10 @@ export const PresidentManagementDashboard: React.FC<PresidentManagementDashboard
           <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-0.5 leading-relaxed">
             <p className="font-semibold text-zinc-900 dark:text-zinc-100">
-              Modo Executivo da Presidência / Vice-presidência Ativado:
+              Painel Executivo da Gestão (Presidência / Vice-presidência):
             </p>
             <p className="text-[11px] text-zinc-600 dark:text-zinc-400">
-              Esta tela é dedicada exclusivamente à gestão dos trabalhos e extração de relatórios. A conferência e o registro direto de itens permanecem restritos aos <strong>Membros da Comissão</strong>.
+              A conferência direta de itens fica a cargo dos <strong>Membros da Comissão</strong>. Este painel permite o acompanhamento global dos trabalhos e a emissão dos relatórios oficiais.
             </p>
           </div>
         </div>

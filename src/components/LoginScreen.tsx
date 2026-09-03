@@ -21,32 +21,53 @@ interface LoginScreenProps {
 }
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
-  const [servers, setServers] = useState<AuthorizedServer[]>(dataService.getServers());
+  const [servers, setServers] = useState<AuthorizedServer[]>(() => dataService.getServers());
   const [searchTerm, setSearchTerm] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(() => dataService.getServers().length === 0 || dataService.isFetching());
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const { theme, toggleTheme } = useTheme();
 
   const fetchLiveServers = async () => {
     setIsLoading(true);
+    setFetchError(null);
     setSyncStatus('Consultando servidores autorizados na planilha...');
     try {
-      const res = await dataService.fetchDataFromGoogleSheets();
-      setServers([...dataService.getServers()]);
-      if (res.serversCount > 0) {
-        setSyncStatus(`${res.serversCount} servidor(es) carregado(s) da planilha.`);
+      const res = await dataService.fetchAuthorizedServersFromGoogleSheets();
+      const loaded = dataService.getServers();
+      setServers([...loaded]);
+      if (loaded.length > 0) {
+        setSyncStatus(`${loaded.length} servidor(es) carregado(s) da planilha.`);
+        setFetchError(null);
       } else {
-        setSyncStatus('Conexão ativa.');
+        setSyncStatus(null);
+        setFetchError('Nenhum servidor foi retornado da aba "Servidores_Autorizados" da planilha.');
       }
     } catch {
-      setSyncStatus('Modo offline / dados locais.');
+      setSyncStatus(null);
+      if (dataService.getServers().length === 0) {
+        setFetchError('Não foi possível conectar à planilha oficial da UTFPR. Verifique sua conexão à internet.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
+    // Subscribe to reactive data updates
+    const unsubscribe = dataService.subscribe(() => {
+      const updated = dataService.getServers();
+      if (updated.length > 0) {
+        setServers([...updated]);
+        setIsLoading(false);
+        setFetchError(null);
+      }
+    });
+
+    // On mount, fetch fresh data from the Google Sheet
     fetchLiveServers();
+
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
@@ -149,13 +170,44 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
 
           {/* Servers list */}
           <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-            {filteredServers.length === 0 ? (
+            {isLoading && servers.length === 0 ? (
+              <div className="text-center py-10 px-4 bg-zinc-50 dark:bg-zinc-950/60 rounded-xl border border-zinc-200 dark:border-zinc-800/80 space-y-3">
+                <RefreshCw className="w-8 h-8 text-amber-500 animate-spin mx-auto" />
+                <div className="space-y-1">
+                  <p className="text-sm font-bold text-zinc-900 dark:text-zinc-100">
+                    Carregando servidores autorizados...
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    Buscando dados atualizados diretamente da Planilha Oficial da UTFPR.
+                  </p>
+                </div>
+              </div>
+            ) : fetchError && servers.length === 0 ? (
+              <div className="text-center py-8 px-4 bg-zinc-50 dark:bg-zinc-950/60 rounded-xl border border-rose-200 dark:border-rose-900/40 space-y-3">
+                <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
+                <div>
+                  <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+                    Não foi possível carregar da planilha
+                  </p>
+                  <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-1 max-w-sm mx-auto">
+                    {fetchError}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchLiveServers}
+                  className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-zinc-950 font-semibold text-xs rounded-xl shadow-xs transition cursor-pointer"
+                >
+                  Tentar Conectar Novamente
+                </button>
+              </div>
+            ) : filteredServers.length === 0 ? (
               <div className="text-center py-8 px-4 bg-zinc-50 dark:bg-zinc-950/60 rounded-xl border border-zinc-200 dark:border-zinc-800/80 space-y-3">
                 <AlertCircle className="w-8 h-8 text-amber-600 dark:text-amber-400 mx-auto opacity-80" />
                 <div>
                   <p className="text-sm font-semibold text-zinc-800 dark:text-zinc-300">Nenhum servidor encontrado</p>
                   <p className="text-xs text-zinc-500 mt-1">
-                    Verifique se o e-mail ou nome está cadastrado na planilha Google Sheets.
+                    Verifique se o e-mail, nome ou SIAPE está cadastrado na planilha Google Sheets.
                   </p>
                 </div>
                 <button
