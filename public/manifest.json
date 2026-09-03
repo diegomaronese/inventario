@@ -1,0 +1,22 @@
+{
+  "short_name": "Inventário UTFPR",
+  "name": "Inventário Patrimonial UTFPR Campus Apucarana",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#09090b",
+  "theme_color": "#f2ba00",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "description": "Aplicativo PWA para conferência e validação do inventário de bens patrimoniais da UTFPR Campus Apucarana"
+}
