@@ -5,6 +5,7 @@ import utfprLogoLight from '../img/utfpr_logo_b.svg';
 import { LogOut, RefreshCw, Sun, Moon, Menu, X, User, FileText } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { dataService } from '../services/dataService';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface HeaderProps {
   user: UserProfile;
@@ -87,6 +88,9 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Desktop View: Actions & User Info (Hidden on Mobile) */}
         <div className="hidden md:flex items-center gap-2 sm:gap-2.5">
+          {/* PWA Install Button */}
+          <PWAInstallButton variant="header" />
+
           {/* Theme Toggle Button */}
           <button
             type="button"
@@ -257,6 +261,9 @@ export const Header: React.FC<HeaderProps> = ({
                   </span>
                 )}
               </button>
+
+              {/* PWA Home Screen Install in Mobile Drawer */}
+              <PWAInstallButton variant="menu" />
 
               {/* Modo Claro / Escuro */}
               <button

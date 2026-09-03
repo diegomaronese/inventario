@@ -16,6 +16,7 @@ import { ExtraItemModal } from './components/ExtraItemModal';
 import { DataReviewModal } from './components/DataReviewModal';
 import { PresidentReportsModal } from './components/PresidentReportsModal';
 import { PresidentManagementDashboard } from './components/PresidentManagementDashboard';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { Sparkles } from 'lucide-react';
 
 export default function App() {
@@ -283,6 +284,18 @@ export default function App() {
 
       // Case 1: Exact match in currently selected room
       if (matched && matched.ambiente.toLowerCase() === selectedAmbiente.toLowerCase()) {
+        const isLocked =
+          dataService.getLastSyncForAmbiente(selectedAmbiente) !== null ||
+          dataService.isItemVerifiedInSpreadsheet(matched.patrimonio);
+        if (isLocked) {
+          soundService.playWarningBeep();
+          showToast(
+            `O item ${trimmed} já consta preenchido na planilha oficial (seleção travada). Para alterar, utilize o botão 'Reenviar Dados'.`,
+            'warning'
+          );
+          return;
+        }
+
         dataService.updateItem(matched.id, {
           status: 'LOCALIZADO',
           verificadoEm: new Date().toISOString(),
@@ -340,6 +353,22 @@ export default function App() {
   // Quick update item status (supports setting to LOCALIZADO, NAO_LOCALIZADO or deselecting back to PENDENTE)
   const handleQuickUpdateStatus = useCallback(
     (itemId: string, status: ItemStatus, condition?: ItemCondition, notes?: string, realAmbiente?: string) => {
+      const all = dataService.getAllItems();
+      const targetItem = all.find((i) => i.id === itemId);
+      const targetAmbiente = targetItem?.ambiente || selectedAmbiente;
+      const isLocked =
+        dataService.getLastSyncForAmbiente(targetAmbiente) !== null ||
+        (targetItem && dataService.isItemVerifiedInSpreadsheet(targetItem.patrimonio));
+
+      if (isLocked) {
+        soundService.playWarningBeep();
+        showToast(
+          `A conferência deste item já foi confirmada na planilha oficial (seleção travada). Para alterar e reenviar, utilize o botão 'Reenviar Dados'.`,
+          'warning'
+        );
+        return;
+      }
+
       if (status === 'PENDENTE') {
         dataService.updateItem(itemId, {
           status: 'PENDENTE',
@@ -671,6 +700,8 @@ export default function App() {
           lastSyncedAt={officialLastSynced}
         />
       )}
+      {/* PWA Network Offline State Toast */}
+      <OfflineIndicator />
     </div>
   );
 }

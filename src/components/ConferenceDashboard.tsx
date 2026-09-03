@@ -9,6 +9,8 @@ import {
   PackagePlus,
   CheckCircle2,
   AlertTriangle,
+  AlertCircle,
+  ArrowRight,
   Check,
   X,
   Clock,
@@ -17,6 +19,8 @@ import {
   Lock,
   Edit3,
   FileText,
+  SlidersHorizontal,
+  RefreshCw,
 } from 'lucide-react';
 import { soundService } from '../services/soundService';
 import { dataService } from '../services/dataService';
@@ -34,7 +38,13 @@ interface ConferenceDashboardProps {
   onOpenScanner: () => void;
   onOpenExtraModal: () => void;
   onOpenReviewModal: () => void;
-  onQuickUpdateStatus: (itemId: string, status: ItemStatus, condition?: ItemCondition, notes?: string) => void;
+  onQuickUpdateStatus: (
+    itemId: string,
+    status: ItemStatus,
+    condition?: ItemCondition,
+    notes?: string,
+    realAmbiente?: string
+  ) => void;
   onDeleteExtraItem: (id: string) => void;
   onOpenReports?: () => void;
 }
@@ -200,6 +210,10 @@ export const ConferenceDashboard: React.FC<ConferenceDashboardProps> = ({
   // Role permissions check
   const isPresidenteOrVice = dataService.isPresidenteOrVice(user);
 
+  const lastSyncReport = useMemo(() => {
+    return dataService.getLastSyncForAmbiente(selectedAmbiente);
+  }, [selectedAmbiente, items]);
+
   const handleSaveInlineNote = (itemId: string) => {
     onQuickUpdateStatus(itemId, 'LOCALIZADO', undefined, noteInput.trim());
     setEditingNotesItemId(null);
@@ -334,6 +348,55 @@ export const ConferenceDashboard: React.FC<ConferenceDashboardProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Banner: Estado de sincronização com a planilha Inventario_Bens */}
+      {lastSyncReport ? (
+        <div
+          id="banner-ambiente-synced"
+          className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs"
+        >
+          <div className="flex items-start gap-2.5">
+            <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-bold text-emerald-950 dark:text-emerald-100 text-sm">
+                  Conferência enviada e confirmada na planilha oficial (Inventario_Bens)
+                </span>
+                <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700/60 font-mono">
+                  {lastSyncReport.timestamp}
+                </span>
+              </div>
+              <p className="text-emerald-800/90 dark:text-emerald-300/90 text-xs mt-1 leading-relaxed">
+                Enviado por <strong>{lastSyncReport.servidor}</strong>. Os dados constam preenchidos na planilha sincronizada e os cards estão travados contra edições diretas. Para efetuar correções e reenviar à planilha oficial, utilize o botão <strong>Reenviar Dados</strong>.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            id="btn-banner-reopen-review"
+            onClick={onOpenReviewModal}
+            className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 self-start sm:self-auto cursor-pointer flex-shrink-0 shadow-xs active:scale-95"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Reenviar Dados</span>
+          </button>
+        </div>
+      ) : (
+        <div
+          id="banner-ambiente-pending"
+          className="p-3 sm:p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900/60 border border-zinc-200/80 dark:border-zinc-800 flex items-center justify-between gap-3 text-xs"
+        >
+          <div className="flex items-center gap-2 text-zinc-600 dark:text-zinc-400">
+            <Clock className="w-4 h-4 text-amber-500 flex-shrink-0" />
+            <span>
+              Planilha Oficial: Itens constam como <strong>Pendente</strong> na aba <strong>Inventario_Bens</strong> (Edição direta liberada nos cards).
+            </span>
+          </div>
+          <span className="text-[11px] font-medium text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2.5 py-1 rounded-lg border border-amber-200 dark:border-amber-800/60 flex-shrink-0">
+            Edição Direta Liberada
+          </span>
+        </div>
+      )}
 
       {/* Active Room Progress Donut Chart & Analytics */}
       <EnvironmentDonutChart
@@ -612,70 +675,125 @@ export const ConferenceDashboard: React.FC<ConferenceDashboardProps> = ({
                     </div>
                   )}
 
-                  {/* Action Buttons: Confirmado / Não Localizado / Desmarcar / Observação */}
-                  <div className="flex items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
-                    {/* Option 1: Confirmado */}
-                    <button
-                      type="button"
-                      id={`btn-confirm-${item.patrimonio}`}
-                      onClick={() => {
-                        if (isLocalizado) {
-                          soundService.playUndoBeep();
-                          onQuickUpdateStatus(item.id, 'PENDENTE');
-                        } else {
-                          soundService.playSuccessBeep();
-                          onQuickUpdateStatus(item.id, 'LOCALIZADO');
-                        }
-                      }}
-                      className={`flex-1 min-h-[44px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95 ${
-                        isLocalizado
-                          ? 'bg-emerald-600 dark:bg-emerald-500 text-white dark:text-zinc-950 font-bold shadow-xs ring-2 ring-emerald-500/30'
-                          : 'bg-zinc-50 hover:bg-emerald-50/70 dark:bg-zinc-950 dark:hover:bg-emerald-950/30 text-zinc-700 hover:text-emerald-700 dark:text-zinc-300 dark:hover:text-emerald-300 border border-zinc-200/80 hover:border-emerald-300 dark:border-zinc-800 dark:hover:border-emerald-700'
-                      }`}
-                      title={isLocalizado ? 'Opção assinalada: toque novamente para desmarcar' : 'Assinalar como Confirmado no local (toque novamente para desmarcar)'}
-                    >
-                      <Check className={`w-4 h-4 ${isLocalizado ? 'text-white dark:text-zinc-950 stroke-[2.5]' : 'text-zinc-400 dark:text-zinc-500'}`} />
-                      <span>{isLocalizado ? 'Confirmado' : 'Confirmado'}</span>
-                    </button>
+                  {/* Action Section: Locked status if confirmed in spreadsheet, or active buttons if pending */}
+                  {(lastSyncReport !== null || dataService.isItemVerifiedInSpreadsheet(item.patrimonio)) ? (
+                    <div className="pt-2 border-t border-zinc-100 dark:border-zinc-800/80 space-y-1.5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        {/* Locked Status Badge */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border shadow-2xs ${
+                              isLocalizado
+                                ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border-emerald-300/80 dark:border-emerald-800'
+                                : isNaoLocalizado
+                                ? 'bg-rose-50 dark:bg-red-950/40 text-rose-800 dark:text-rose-300 border-rose-300/80 dark:border-rose-800'
+                                : isDivergente
+                                ? 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border-amber-300/80 dark:border-amber-800'
+                                : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border-zinc-300 dark:border-zinc-700'
+                            }`}
+                          >
+                            {isLocalizado ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+                            ) : isNaoLocalizado ? (
+                              <X className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400 stroke-[2.5]" />
+                            ) : isDivergente ? (
+                              <AlertCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                            ) : null}
+                            <span>
+                              {isLocalizado
+                                ? 'Confirmado no Local'
+                                : isNaoLocalizado
+                                ? 'Não Localizado'
+                                : isDivergente
+                                ? 'Divergência de Local'
+                                : 'Pendente'}
+                            </span>
+                            <Lock className="w-3 h-3 text-zinc-400 dark:text-zinc-500 ml-0.5" />
+                          </div>
 
-                    {/* Option 2: Não Localizado */}
-                    <button
-                      type="button"
-                      id={`btn-nao-localizado-${item.patrimonio}`}
-                      onClick={() => {
-                        if (isNaoLocalizado) {
-                          soundService.playUndoBeep();
-                          onQuickUpdateStatus(item.id, 'PENDENTE');
-                        } else {
-                          soundService.playErrorBeep();
-                          onQuickUpdateStatus(item.id, 'NAO_LOCALIZADO');
-                        }
-                      }}
-                      className={`flex-1 min-h-[44px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95 ${
-                        isNaoLocalizado
-                          ? 'bg-rose-600 text-white font-bold shadow-xs ring-2 ring-rose-500/30'
-                          : 'bg-zinc-50 hover:bg-rose-50/70 dark:bg-zinc-950 dark:hover:bg-rose-950/30 text-zinc-600 hover:text-rose-700 dark:text-zinc-400 dark:hover:text-rose-300 border border-zinc-200/80 hover:border-rose-300 dark:border-zinc-800 dark:hover:border-rose-800'
-                      }`}
-                      title={isNaoLocalizado ? 'Opção assinalada: toque novamente para desmarcar' : 'Assinalar como Não Localizado (toque novamente para desmarcar)'}
-                    >
-                      <X className={`w-4 h-4 ${isNaoLocalizado ? 'text-white stroke-[2.5]' : 'text-zinc-400 dark:text-zinc-500'}`} />
-                      <span>{isNaoLocalizado ? 'Não Localizado' : 'Não Localizado'}</span>
-                    </button>
+                          <span className="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1">
+                            <Lock className="w-3 h-3 text-zinc-400" />
+                            <span>Seleção travada na planilha</span>
+                          </span>
+                        </div>
 
-                    {/* Observation note */}
-                    <button
-                      type="button"
-                      id={`btn-notes-${item.patrimonio}`}
-                      onClick={() => {
-                        setEditingNotesItemId(item.id);
-                        setNoteInput(item.observacoes || '');
-                      }}
-                      className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-950 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 border border-zinc-200/80 dark:border-zinc-800 transition cursor-pointer flex items-center justify-center active:scale-95"
-                      title="Adicionar ou editar observação"
-                    >
-                      <Edit3 className="w-4 h-4" />
-                    </button>
-                  </div>
+                        {/* Direct link to Reenviar Dados */}
+                        <button
+                          type="button"
+                          onClick={onOpenReviewModal}
+                          className="text-[11px] font-bold text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300 flex items-center gap-1 cursor-pointer self-start sm:self-auto py-1 px-2.5 rounded-lg hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition"
+                          title="Para alterar informações e reenviar à planilha, utilize o botão Reenviar Dados"
+                        >
+                          <span>Alterar no Reenvio</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 pt-2 border-t border-zinc-100 dark:border-zinc-800/80">
+                      {/* Option 1: Confirmado */}
+                      <button
+                        type="button"
+                        id={`btn-confirm-${item.patrimonio}`}
+                        onClick={() => {
+                          if (isLocalizado) {
+                            soundService.playUndoBeep();
+                            onQuickUpdateStatus(item.id, 'PENDENTE');
+                          } else {
+                            soundService.playSuccessBeep();
+                            onQuickUpdateStatus(item.id, 'LOCALIZADO');
+                          }
+                        }}
+                        className={`flex-1 min-h-[44px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95 ${
+                          isLocalizado
+                            ? 'bg-emerald-600 dark:bg-emerald-500 text-white dark:text-zinc-950 font-bold shadow-xs ring-2 ring-emerald-500/30'
+                            : 'bg-zinc-50 hover:bg-emerald-50/70 dark:bg-zinc-950 dark:hover:bg-emerald-950/30 text-zinc-700 hover:text-emerald-700 dark:text-zinc-300 dark:hover:text-emerald-300 border border-zinc-200/80 hover:border-emerald-300 dark:border-zinc-800 dark:hover:border-emerald-700'
+                        }`}
+                        title={isLocalizado ? 'Opção assinalada: toque novamente para desmarcar' : 'Assinalar como Confirmado no local (toque novamente para desmarcar)'}
+                      >
+                        <Check className={`w-4 h-4 ${isLocalizado ? 'text-white dark:text-zinc-950 stroke-[2.5]' : 'text-zinc-400 dark:text-zinc-500'}`} />
+                        <span>Confirmado</span>
+                      </button>
+
+                      {/* Option 2: Não Localizado */}
+                      <button
+                        type="button"
+                        id={`btn-nao-localizado-${item.patrimonio}`}
+                        onClick={() => {
+                          if (isNaoLocalizado) {
+                            soundService.playUndoBeep();
+                            onQuickUpdateStatus(item.id, 'PENDENTE');
+                          } else {
+                            soundService.playErrorBeep();
+                            onQuickUpdateStatus(item.id, 'NAO_LOCALIZADO');
+                          }
+                        }}
+                        className={`flex-1 min-h-[44px] py-2.5 px-3 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer active:scale-95 ${
+                          isNaoLocalizado
+                            ? 'bg-rose-600 text-white font-bold shadow-xs ring-2 ring-rose-500/30'
+                            : 'bg-zinc-50 hover:bg-rose-50/70 dark:bg-zinc-950 dark:hover:bg-rose-950/30 text-zinc-600 hover:text-rose-700 dark:text-zinc-400 dark:hover:text-rose-300 border border-zinc-200/80 hover:border-rose-300 dark:border-zinc-800 dark:hover:border-rose-800'
+                        }`}
+                        title={isNaoLocalizado ? 'Opção assinalada: toque novamente para desmarcar' : 'Assinalar como Não Localizado (toque novamente para desmarcar)'}
+                      >
+                        <X className={`w-4 h-4 ${isNaoLocalizado ? 'text-white stroke-[2.5]' : 'text-zinc-400 dark:text-zinc-500'}`} />
+                        <span>Não Localizado</span>
+                      </button>
+
+                      {/* Observation note */}
+                      <button
+                        type="button"
+                        id={`btn-notes-${item.patrimonio}`}
+                        onClick={() => {
+                          setEditingNotesItemId(item.id);
+                          setNoteInput(item.observacoes || '');
+                        }}
+                        className="min-h-[44px] min-w-[44px] p-2.5 rounded-xl bg-zinc-50 hover:bg-zinc-100 dark:bg-zinc-950 dark:hover:bg-zinc-800 text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 border border-zinc-200/80 dark:border-zinc-800 transition cursor-pointer flex items-center justify-center active:scale-95"
+                        title="Adicionar ou editar observação rápida"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -708,20 +826,30 @@ export const ConferenceDashboard: React.FC<ConferenceDashboardProps> = ({
             <span className="truncate">Ler Código</span>
           </button>
 
-          {/* Review Data and Submit Button */}
+          {/* Review Data and Submit / Resubmit Button */}
           <button
             type="button"
             id="btn-bottom-review-data"
             onClick={onOpenReviewModal}
             className={`flex-1 sm:flex-initial min-h-[46px] py-2.5 px-2 sm:px-5 rounded-xl text-[11px] sm:text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer ${
-              isEnvironmentComplete
+              lastSyncReport
+                ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm ring-2 ring-emerald-500/30'
+                : isEnvironmentComplete
                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm'
                 : 'bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 border border-zinc-200/80 dark:border-zinc-700'
             }`}
           >
-            <CheckCircle2 className={`w-4 h-4 flex-shrink-0 ${isEnvironmentComplete ? 'text-white' : 'text-amber-600 dark:text-amber-400'}`} />
+            {lastSyncReport ? (
+              <RefreshCw className="w-4 h-4 flex-shrink-0 text-white" />
+            ) : (
+              <CheckCircle2
+                className={`w-4 h-4 flex-shrink-0 ${
+                  isEnvironmentComplete ? 'text-white' : 'text-amber-600 dark:text-amber-400'
+                }`}
+              />
+            )}
             <div className="text-left leading-tight truncate">
-              <span className="block truncate">Conferir</span>
+              <span className="block truncate">{lastSyncReport ? 'Reenviar' : 'Conferir'}</span>
               <span className="text-[10px] font-mono opacity-80">
                 ({totalInAmbiente - pendentesCount}/{totalInAmbiente})
               </span>

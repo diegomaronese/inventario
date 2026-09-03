@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="mBgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18181b"/>
+      <stop offset="50%" stop-color="#09090b"/>
+      <stop offset="100%" stop-color="#040405"/>
+    </linearGradient>
+
+    <linearGradient id="mAmberGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="50%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+
+    <linearGradient id="mGoldLight" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+
+    <linearGradient id="mLaserBeam" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0"/>
+      <stop offset="25%" stop-color="#fef08a" stop-opacity="0.9"/>
+      <stop offset="50%" stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="75%" stop-color="#fef08a" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="mCardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#27272a"/>
+      <stop offset="100%" stop-color="#18181b"/>
+    </linearGradient>
+
+    <radialGradient id="mAmbientGlow" cx="50%" cy="35%" r="60%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.3"/>
+      <stop offset="60%" stop-color="#f59e0b" stop-opacity="0.03"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+
+    <filter id="mLaserGlow" x="-20%" y="-100%" width="140%" height="300%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Full-bleed background for maskable format -->
+  <rect width="512" height="512" fill="url(#mBgGrad)"/>
+  <circle cx="256" cy="230" r="210" fill="url(#mAmbientGlow)"/>
+
+  <!-- Scaled down to safe-zone (80% diameter) centered around (256, 256) -->
+  <g transform="translate(256, 256) scale(0.78) translate(-256, -256)">
+    <!-- Central Asset Card / Tablet Frame -->
+    <g transform="translate(106, 92)">
+      <rect x="0" y="8" width="300" height="336" rx="36" fill="#000000" opacity="0.6"/>
+      <rect x="0" y="0" width="300" height="336" rx="36" fill="url(#mCardGrad)" stroke="#3f3f46" stroke-width="2.5"/>
+
+      <!-- Golden Banner -->
+      <path d="M0 36 C0 16.1 16.1 0 36 0 L264 0 C283.9 0 300 16.1 300 36 L300 68 L0 68 Z" fill="url(#mAmberGrad)"/>
+      <text x="150" y="44" fill="#09090b" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="20" font-weight="900" letter-spacing="4" text-anchor="middle">UTFPR • PATRIMÔNIO</text>
+
+      <!-- Barcode Container Area -->
+      <rect x="36" y="98" width="228" height="148" rx="20" fill="#09090b" stroke="#27272a" stroke-width="2"/>
+
+      <!-- Barcode Vertical Stripes -->
+      <g fill="url(#mGoldLight)" transform="translate(56, 116)">
+        <rect x="0" y="0" width="10" height="84" rx="3"/>
+        <rect x="16" y="0" width="6" height="84" rx="2"/>
+        <rect x="28" y="0" width="18" height="84" rx="4"/>
+        <rect x="52" y="0" width="8" height="84" rx="3"/>
+        <rect x="66" y="0" width="14" height="84" rx="4"/>
+        <rect x="86" y="0" width="6" height="84" rx="2"/>
+        <rect x="98" y="0" width="22" height="84" rx="4"/>
+        <rect x="126" y="0" width="10" height="84" rx="3"/>
+        <rect x="142" y="0" width="16" height="84" rx="4"/>
+        <rect x="164" y="0" width="8" height="84" rx="3"/>
+        <rect x="178" y="0" width="10" height="84" rx="3"/>
+      </g>
+
+      <!-- Laser Scanning Beam -->
+      <line x1="24" y1="158" x2="276" y2="158" stroke="url(#mLaserBeam)" stroke-width="5" filter="url(#mLaserGlow)" stroke-linecap="round"/>
+
+      <text x="150" y="228" fill="#a1a1aa" font-family="'Roboto Mono', monospace, sans-serif" font-size="13" font-weight="700" letter-spacing="4" text-anchor="middle">2026 • APUCARANA</text>
+
+      <rect x="36" y="268" width="140" height="18" rx="9" fill="#27272a"/>
+      <rect x="36" y="294" width="80" height="12" rx="6" fill="#27272a" opacity="0.6"/>
+    </g>
+
+    <!-- Green & Gold Verification Seal -->
+    <g transform="translate(316, 316)">
+      <circle cx="56" cy="58" r="48" fill="#000000" opacity="0.5"/>
+      <circle cx="56" cy="56" r="46" fill="url(#mAmberGrad)"/>
+      <circle cx="56" cy="56" r="40" fill="#059669"/>
+      <circle cx="56" cy="56" r="36" fill="#10b981"/>
+      <path d="M43 56 L53 66 L71 44" fill="none" stroke="#ffffff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+  </g>
+</svg>

@@ -15,6 +15,7 @@ import {
   Moon,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface LoginScreenProps {
   onLoginSuccess: (user: UserProfile) => void;
@@ -136,7 +137,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             <div className="space-y-0.5">
               <h2 className="text-xs sm:text-sm font-bold text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5 sm:gap-2">
                 <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                Identificação do Conferente
+                Identificação do Usuário
               </h2>
             </div>
 
@@ -269,6 +270,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess }) => {
             )}
           </div>
         </div>
+
+        {/* PWA Home Screen Install Banner */}
+        <PWAInstallButton variant="banner" />
       </div>
 
       <div className="text-center py-2 text-[11px] text-zinc-400 dark:text-zinc-500 mt-2 sm:mt-3">

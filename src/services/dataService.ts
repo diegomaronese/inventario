@@ -616,27 +616,28 @@ class DataService {
 
     try {
       // 1. Fetch Inventario_Bens
+      const timestamp = Date.now();
       const sheetBens = this.sheetConfig.sheetNameInventario || 'Inventario_Bens';
       const bensUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
         sheetBens
-      )}`;
+      )}&t=${timestamp}`;
 
       // 2. Fetch Servidores_Autorizados
       const sheetServ = this.sheetConfig.sheetNameServidores || 'Servidores_Autorizados';
       const servUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
         sheetServ
-      )}`;
+      )}&t=${timestamp}`;
 
       // 3. Fetch Itens_Nao_Cadastrados
       const sheetExtra = this.sheetConfig.sheetNameExtras || 'Itens_Nao_Cadastrados';
       const extraUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
         sheetExtra
-      )}`;
+      )}&t=${timestamp}`;
 
       const [resBens, resServ, resExtra] = await Promise.all([
-        fetch(bensUrl).catch(() => null),
-        fetch(servUrl).catch(() => null),
-        fetch(extraUrl).catch(() => null),
+        fetch(bensUrl, { cache: 'no-store' }).catch(() => null),
+        fetch(servUrl, { cache: 'no-store' }).catch(() => null),
+        fetch(extraUrl, { cache: 'no-store' }).catch(() => null),
       ]);
 
       let parsedItems: InventoryItem[] = [];
@@ -668,6 +669,16 @@ class DataService {
         parsedExtras = rows
           .map((row, idx) => mapRowToExtraItem(cols, row, idx))
           .filter((ex): ex is ExtraItem => ex !== null);
+      }
+
+      // Keep official un-merged copy from master spreadsheet
+      if (parsedItems.length > 0) {
+        this.officialItems = parsedItems;
+        safeSetItem(STORAGE_KEYS.OFFICIAL_ITEMS, JSON.stringify(this.officialItems));
+      }
+      if (parsedExtras.length > 0) {
+        this.officialExtraItems = parsedExtras;
+        safeSetItem(STORAGE_KEYS.OFFICIAL_EXTRAS, JSON.stringify(this.officialExtraItems));
       }
 
       // Update in-memory state and localStorage if data retrieved
@@ -959,6 +970,161 @@ class DataService {
 
   public getReports(): SyncReport[] {
     return this.reports;
+  }
+
+  // Verify whether a specific item is recorded as verified (non-PENDENTE) in the official spreadsheet aba Inventario_Bens
+  public isItemVerifiedInSpreadsheet(patrimonio: string): boolean {
+    if (!patrimonio) return false;
+    const cleanPat = patrimonio.trim().toLowerCase();
+    const official = this.officialItems.find(
+      (i) =>
+        (i.patrimonio && i.patrimonio.trim().toLowerCase() === cleanPat) ||
+        (i.patrimonioAntigo && i.patrimonioAntigo.trim().toLowerCase() === cleanPat)
+    );
+    if (!official) return false;
+
+    // If marked as PENDENTE or empty in the official sheet, it is NOT verified as sent
+    if (!official.status || official.status === 'PENDENTE') {
+      return false;
+    }
+
+    return (
+      official.status === 'LOCALIZADO' ||
+      official.status === 'NAO_LOCALIZADO' ||
+      official.status === 'DIVERGENCIA_LOCAL'
+    );
+  }
+
+  // Verify whether all items of an environment are confirmed preenchidos (non-PENDENTE) in Inventario_Bens
+  public isAmbienteVerifiedInSpreadsheet(ambiente: string): boolean {
+    if (!ambiente) return false;
+    const cleanAmbiente = ambiente.trim().toLowerCase();
+    const roomOfficial = this.officialItems.filter(
+      (i) => i.ambiente && i.ambiente.trim().toLowerCase() === cleanAmbiente
+    );
+    if (roomOfficial.length === 0) return false;
+
+    // If ANY item for this room on the official sheet is still PENDENTE,
+    // the app must consider that it was NOT sent (or send failed)
+    const hasPendente = roomOfficial.some(
+      (i) => !i.status || i.status === 'PENDENTE'
+    );
+    if (hasPendente) {
+      return false;
+    }
+
+    return roomOfficial.every(
+      (i) =>
+        i.status === 'LOCALIZADO' ||
+        i.status === 'NAO_LOCALIZADO' ||
+        i.status === 'DIVERGENCIA_LOCAL'
+    );
+  }
+
+  // Live verification against Google Sheets Inventario_Bens
+  public async verifySpreadsheetStatus(ambiente: string): Promise<{
+    verified: boolean;
+    pendingCount: number;
+    filledCount: number;
+    totalCount: number;
+    message: string;
+  }> {
+    const spreadsheetId = this.sheetConfig.spreadsheetId;
+    const sheetBens = this.sheetConfig.sheetNameInventario || 'Inventario_Bens';
+    const bensUrl = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
+      sheetBens
+    )}&t=${Date.now()}`;
+
+    try {
+      const res = await fetch(bensUrl, { cache: 'no-store' });
+      if (res.ok) {
+        const text = await res.text();
+        const { cols, rows } = parseGvizResponse(text);
+        const freshOfficial = rows
+          .map((row, idx) => mapRowToInventoryItem(cols, row, idx))
+          .filter((item): item is InventoryItem => item !== null);
+
+        if (freshOfficial.length > 0) {
+          this.officialItems = freshOfficial;
+          safeSetItem(STORAGE_KEYS.OFFICIAL_ITEMS, JSON.stringify(this.officialItems));
+        }
+      }
+    } catch (err) {
+      console.warn('Erro ao consultar status da planilha:', err);
+    }
+
+    const cleanAmbiente = ambiente.trim().toLowerCase();
+    const roomItems = this.officialItems.filter(
+      (i) => i.ambiente && i.ambiente.trim().toLowerCase() === cleanAmbiente
+    );
+    const totalCount = roomItems.length;
+    const pendingCount = roomItems.filter((i) => !i.status || i.status === 'PENDENTE').length;
+    const filledCount = totalCount - pendingCount;
+    const verified = totalCount > 0 && pendingCount === 0;
+
+    let message = '';
+    if (verified) {
+      message = `Conferência confirmada na planilha: todos os ${totalCount} item(ns) constam preenchidos na aba Inventario_Bens.`;
+    } else if (pendingCount > 0) {
+      message = `Na planilha Inventario_Bens constam ${pendingCount} de ${totalCount} item(ns) como Pendente. O app mantém os cards desbloqueados para edição direta.`;
+    } else {
+      message = `Nenhum item localizado na planilha para o ambiente "${ambiente}".`;
+    }
+
+    return {
+      verified,
+      pendingCount,
+      filledCount,
+      totalCount,
+      message,
+    };
+  }
+
+  // Get last successful sync report for an environment based strictly on sheet confirmation
+  public getLastSyncForAmbiente(ambiente: string): SyncReport | null {
+    if (!ambiente) return null;
+    const cleanAmbiente = ambiente.trim().toLowerCase();
+
+    // Check strict verification in spreadsheet Inventario_Bens
+    const isVerifiedInSheet = this.isAmbienteVerifiedInSpreadsheet(ambiente);
+    if (!isVerifiedInSheet) {
+      // If the spreadsheet still has items as Pendente, the app MUST consider that it was NOT sent
+      // or that an error occurred, keeping the default state with cards unlocked for direct changes.
+      return null;
+    }
+
+    const report = this.reports.find(
+      (r) => r.ambiente && r.ambiente.trim().toLowerCase() === cleanAmbiente && r.status === 'SUCESSO'
+    );
+    if (report) return report;
+
+    // Fallback constructed from verified official spreadsheet items
+    const roomOfficial = this.officialItems.filter(
+      (i) => i.ambiente && i.ambiente.trim().toLowerCase() === cleanAmbiente
+    );
+
+    const latestVerified = roomOfficial.reduce((acc, curr) => {
+      if (!acc.verificadoEm) return curr;
+      if (!curr.verificadoEm) return acc;
+      return new Date(curr.verificadoEm).getTime() > new Date(acc.verificadoEm).getTime() ? curr : acc;
+    }, roomOfficial[0]);
+
+    return {
+      timestamp: latestVerified.verificadoEm
+        ? (latestVerified.verificadoEm.includes('/')
+          ? latestVerified.verificadoEm
+          : new Date(latestVerified.verificadoEm).toLocaleString('pt-BR'))
+        : 'Confirmado na Planilha Oficial',
+      totalConferidos: roomOfficial.length,
+      localizados: roomOfficial.filter((i) => i.status === 'LOCALIZADO').length,
+      naoLocalizados: roomOfficial.filter((i) => i.status === 'NAO_LOCALIZADO').length,
+      divergentes: roomOfficial.filter((i) => i.status === 'DIVERGENCIA_LOCAL').length,
+      extras: this.extraItems.filter((e) => e.ambiente && e.ambiente.trim().toLowerCase() === cleanAmbiente).length,
+      ambiente,
+      servidor: latestVerified.verificadoPorNome || latestVerified.verificadoPor || 'Conferente UTFPR',
+      status: 'SUCESSO',
+      mensagem: 'Conferência confirmada e preenchida na planilha oficial (Inventario_Bens).',
+    };
   }
 
   // Get unique distinct blocks and environments
@@ -1267,6 +1433,7 @@ function doGet(e) {
     };
 
     // Primary: Direct Google Apps Script Webhook execution
+    let webhookTriggered = false;
     if (this.sheetConfig.webhookUrl && this.sheetConfig.webhookUrl.startsWith('http')) {
       try {
         const payload = {
@@ -1288,29 +1455,58 @@ function doGet(e) {
           body: JSON.stringify(payload),
           mode: 'no-cors',
         });
-
-        report.status = 'SUCESSO';
-        report.mensagem = `Planilha Google Sheets atualizada! Os ${ambientItems.length} item(ns) do local "${ambiente}" foram gravados na planilha oficial.`;
+        webhookTriggered = true;
       } catch (err: any) {
         console.warn('Erro ao disparar webhook do Apps Script:', err);
-        report.status = 'ERRO';
-        report.mensagem = `Falha ao transmitir dados para o Webhook do Google Sheets: ${err.message || 'Erro de conexão'}. Dados foram salvos localmente.`;
       }
-    } else {
-      report.mensagem = `Conferência do local "${ambiente}" salva com sucesso no aplicativo. Para atualizar automaticamente as células da planilha no Google Drive, configure a URL do Webhook do Google Apps Script.`;
     }
 
-    this.updateLastSyncTime();
+    // If webhook was triggered, wait briefly for Apps Script to commit cell updates to Google Sheets
+    if (webhookTriggered) {
+      await new Promise((resolve) => setTimeout(resolve, 1600));
+    }
 
-    this.reports.unshift(report);
-    if (this.reports.length > 50) this.reports.pop();
-    this.saveReports();
+    // Live verification: check whether sent items are actually recorded/preenchidos in Inventario_Bens
+    const verification = await this.verifySpreadsheetStatus(ambiente);
 
-    return {
-      success: true,
-      message: report.mensagem,
-      report,
-    };
+    if (verification.verified) {
+      // Confirmed: spreadsheet Inventario_Bens has all items recorded and not PENDENTE
+      report.status = 'SUCESSO';
+      report.mensagem = `Envio verificado e confirmado na planilha oficial! Os ${verification.filledCount} item(ns) do local "${ambiente}" constam preenchidos na aba Inventario_Bens. A seleção nos cards foi travada.`;
+
+      this.reports.unshift(report);
+      if (this.reports.length > 50) this.reports.pop();
+      this.saveReports();
+      this.updateLastSyncTime();
+
+      return {
+        success: true,
+        message: report.mensagem,
+        report,
+      };
+    } else {
+      // If items on the sheet remain PENDENTE, treat as not sent / send error:
+      // Keep default behavior allowing direct edits on cards
+      report.status = 'ERRO';
+      const detailMsg = webhookTriggered
+        ? `Os itens ainda constam como Pendentes na aba Inventario_Bens da planilha oficial (${verification.pendingCount} pendente(s)). O envio não foi confirmado na planilha. Os cards continuam liberados para alterações diretas.`
+        : `Atenção: Os itens ainda constam como Pendentes na planilha oficial. Para envio direto, configure o Webhook do Google Apps Script ou utilize a exportação TSV. Os cards continuam liberados para alterações diretas.`;
+
+      report.mensagem = detailMsg;
+
+      // Ensure no SUCCESS report remains for this ambiente while the sheet is pending
+      const cleanAmbiente = ambiente.trim().toLowerCase();
+      this.reports = this.reports.filter(
+        (r) => !(r.ambiente && r.ambiente.trim().toLowerCase() === cleanAmbiente && r.status === 'SUCESSO')
+      );
+      this.saveReports();
+
+      return {
+        success: false,
+        message: detailMsg,
+        report: null as any,
+      };
+    }
   }
 
   // Export current room or all items as Tab-Separated Values (TSV) for instant Ctrl+V pasting into Google Sheets
