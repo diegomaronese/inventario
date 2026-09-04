@@ -30,7 +30,7 @@ export default defineConfig(() => {
           lang: 'pt-BR',
           dir: 'ltr',
           theme_color: '#f59e0b',
-          background_color: '#09090b',
+          background_color: '#ffffff',
           display: 'standalone',
           display_override: ['standalone', 'window-controls-overlay'],
           orientation: 'portrait-primary',

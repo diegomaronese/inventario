@@ -13,7 +13,7 @@
     "window-controls-overlay"
   ],
   "orientation": "portrait-primary",
-  "background_color": "#09090b",
+  "background_color": "#ffffff",
   "theme_color": "#f59e0b",
   "categories": [
     "productivity",
